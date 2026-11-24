@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#1a0a3a">
+<title>Ikuti Pose Sensor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bangers&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#1a0a3a;touch-action:none;-webkit-user-select:none;user-select:none;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#fff}
+  #bgGrad{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 15%,#5a2ab0 0%,#2a1060 45%,#0e0526 100%)}
+  #bgVideo{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);background:#000}
+  #dim{position:fixed;inset:0;pointer-events:none;background:#12062e;opacity:.4}
+  #stage{position:fixed;inset:0;pointer-events:none;mix-blend-mode:screen;opacity:.3;background:radial-gradient(circle at 15% 0%,#ff4aa8 0%,transparent 40%),radial-gradient(circle at 85% 0%,#4aa8ff 0%,transparent 40%),radial-gradient(circle at 50% 100%,#ffd24a 0%,transparent 45%)}
+  canvas{position:fixed;display:block}
+  #fx{inset:0;width:100%;height:100%;pointer-events:none}
+  #danceBox{position:fixed;left:calc(env(safe-area-inset-left) + 10px);bottom:calc(env(safe-area-inset-bottom) + 70px);width:min(30vw,250px);height:min(52vh,360px);border-radius:16px;overflow:hidden;background:linear-gradient(#3a1a7a,#1a0a40);border:2px solid rgba(255,138,220,.6);box-shadow:0 8px 24px rgba(0,0,0,.5);pointer-events:none}
+  #danceC{position:absolute;inset:0;width:100%;height:100%}
+  #danceBox .lab{position:absolute;top:6px;left:0;right:0;text-align:center;font-family:Bangers,Impact,sans-serif;font-size:17px;letter-spacing:2px;color:#ff9ae0;text-shadow:0 2px 4px #000}
+  #danceBox .nm{position:absolute;bottom:6px;left:6px;right:6px;text-align:center;font-family:Bangers,Impact,sans-serif;font-size:22px;letter-spacing:1px;color:#fff;background:rgba(0,0,0,.6);border-radius:10px;padding:3px 6px}
+  .hud{position:fixed;inset:0;pointer-events:none;font-family:Bangers,Impact,"Arial Black",sans-serif}
+  .song{position:absolute;bottom:calc(env(safe-area-inset-bottom) + 12px);left:50%;transform:translateX(-50%);width:min(56vw,420px);text-align:center}
+  .song .t{font-size:18px;letter-spacing:2px;color:#ffd2f2;text-shadow:0 2px 4px #000}.song .pb{height:10px;border-radius:6px;background:rgba(0,0,0,.55);border:2px solid rgba(255,255,255,.4);overflow:hidden;margin-top:3px}.song .pb i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ff4aa8,#ffd24a)}
+  .pc{position:absolute;top:calc(env(safe-area-inset-top) + 92px);text-align:center;background:rgba(0,0,0,.5);border-radius:16px;padding:6px 14px;min-width:120px}.pc.r{right:12px}.pc.l{left:12px}
+  .pc .pn{font-size:16px;letter-spacing:2px;color:#ffd2f2}.pc .big{font-size:clamp(34px,6.5vw,52px);line-height:1;color:#fff;text-shadow:0 3px 0 #000,0 0 14px rgba(255,138,220,.7)}.pc .cb{font-size:20px;color:#ffd24a;letter-spacing:1px;min-height:24px}.pc .sim{height:9px;border-radius:5px;background:rgba(255,255,255,.2);overflow:hidden;margin-top:3px}.pc .sim i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ff4a6a,#ffd24a,#7fffd0)}
+  .pc.p1 .pn{color:#ffb35a}.pc.p2 .pn{color:#6fc8ff}
+  .pops{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+  .pops b{position:absolute;font-family:Bangers,Impact,sans-serif;font-size:42px;text-shadow:0 3px 0 rgba(0,0,0,.6),0 0 12px rgba(0,0,0,.5);transform:translate(-50%,-50%);animation:up .9s ease-out forwards;white-space:nowrap}
+  @keyframes up{0%{opacity:0;transform:translate(-50%,-30%) scale(.4)}20%{opacity:1;transform:translate(-50%,-60%) scale(1.3)}100%{opacity:0;transform:translate(-50%,-220%) scale(1)}}
+  .msg{position:fixed;left:0;right:0;top:36%;text-align:center;pointer-events:none;font-family:Bangers,Impact,sans-serif;font-size:clamp(44px,11vw,100px);letter-spacing:2px;color:#fff;text-shadow:0 5px 0 #1a0a3a,0 0 30px rgba(255,138,220,.8);opacity:0}.msg.show{animation:msg 1.2s ease-out forwards}
+  @keyframes msg{0%{opacity:0;transform:scale(.4)}18%{opacity:1;transform:scale(1.2)}32%{transform:scale(1)}80%{opacity:1}100%{opacity:0;transform:translateY(-24px)}}
+  .count{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;font-family:Bangers,Impact,sans-serif;font-size:150px;color:#fff;text-shadow:0 6px 0 #6a1a8a,0 0 40px rgba(255,138,220,.8)}.count.go{animation:cnt .4s ease-out}@keyframes cnt{from{transform:scale(2);opacity:0}to{transform:scale(1);opacity:1}}
+  #waitBox{position:fixed;left:50%;top:26%;transform:translateX(-50%);width:min(86vw,420px);background:rgba(0,0,0,.72);border:1px solid rgba(255,255,255,.25);border-radius:16px;padding:14px 18px;text-align:center;pointer-events:none}#waitBox .t{font-family:Bangers,Impact,sans-serif;font-size:28px;color:#ffd24a;letter-spacing:1px}#waitBox .s{font-size:14px;margin-top:6px;color:#f0dcff;line-height:1.4}
+  .btns{position:fixed;right:calc(env(safe-area-inset-right) + 12px);bottom:calc(env(safe-area-inset-bottom) + 12px);display:flex;gap:8px}
+  .btn-sm{background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:999px;padding:9px 14px;font-size:14px;font-family:inherit;cursor:pointer}
+  .overlay{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;background:radial-gradient(ellipse at center,rgba(60,20,110,.6),rgba(14,5,36,.95));gap:12px;overflow:auto}
+  .hidden{display:none!important}
+  h1{font-family:Bangers,Impact,"Arial Black",sans-serif;font-weight:400;font-size:clamp(50px,14vw,100px);margin:0 0 4px;line-height:.9;color:#ff9ae0;text-shadow:0 5px 0 #6a1a8a,0 12px 26px rgba(0,0,0,.6);letter-spacing:2px;transform:rotate(-3deg)}
+  h1 small{display:block;font-size:.42em;color:#ffd24a;text-shadow:0 3px 0 #7a4a00;letter-spacing:3px}
+  h2{font-family:Bangers,Impact,"Arial Black",sans-serif;font-weight:400;font-size:52px;margin:0;color:#ffd24a;text-shadow:0 4px 0 #7a3b00;letter-spacing:2px}
+  .big2{font-family:Bangers,Impact,sans-serif;font-size:96px;line-height:1;color:#ff9ae0;text-shadow:0 5px 0 #6a1a8a}.stars{font-size:46px;letter-spacing:4px}
+  p{max-width:440px;margin:0;color:#f0dcff;line-height:1.45;font-size:15px}
+  .btn{font-family:Bangers,Impact,"Arial Black",sans-serif;font-size:26px;letter-spacing:1px;padding:14px 26px;border:0;border-radius:16px;color:#2a0a30;background:linear-gradient(#ffc2ee,#ff6ac8);box-shadow:0 5px 0 #a0308a,0 10px 20px rgba(0,0,0,.4);min-width:250px;cursor:pointer;text-decoration:none;display:inline-block}
+  .btn:active{transform:translateY(3px);box-shadow:0 2px 0 #a0308a}.btn.alt{background:linear-gradient(#ffe066,#ffb000);box-shadow:0 5px 0 #a35f00,0 10px 20px rgba(0,0,0,.4);color:#2a1200}
+  .btn.ghost{font-size:20px;padding:10px 20px;min-width:0;background:rgba(255,255,255,.12);color:#f0dcff;box-shadow:none;border:1px solid rgba(255,255,255,.25)}.btn.tiny{font-size:16px;padding:6px 14px;min-width:0}
+  .btn.mode{font-size:17px;padding:8px 14px;min-width:0;background:rgba(255,255,255,.12);color:#f0dcff;box-shadow:none;border:1px solid rgba(255,255,255,.25)}.btn.mode.on{background:linear-gradient(#ffc2ee,#ff6ac8);color:#2a0a30;border-color:#ff6ac8}
+  .modes{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+  .songs{display:flex;flex-direction:column;gap:8px;width:min(92vw,440px)}.songbtn{display:flex;align-items:center;gap:12px;text-align:left;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.2);border-radius:14px;padding:10px 14px;color:#fff;cursor:pointer;font-family:inherit}.songbtn.on{border-color:#ff6ac8;background:rgba(255,106,200,.22);box-shadow:0 0 14px rgba(255,106,200,.5)}.songbtn .e{font-size:34px}.songbtn .n{font-family:Bangers,Impact,sans-serif;font-size:24px;letter-spacing:1px}.songbtn .d{font-size:12.5px;opacity:.8;line-height:1.3}.songbtn .bt{margin-left:auto;font-size:13px;color:#ffd24a;white-space:nowrap}
+  details.camset{max-width:440px;width:100%;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:8px 14px;text-align:left;font-size:14px;color:#f0dcff}details.camset summary{cursor:pointer;padding:4px 0;font-weight:600}
+  .cs{margin:12px 0}.cs .row{display:flex;justify-content:space-between;align-items:center;gap:10px}.cs input[type=range]{width:150px;accent-color:#ff6ac8}.cs .val{min-width:34px;text-align:right;color:#ffd24a}.cs small{display:block;opacity:.65;font-size:12px;margin-top:2px}
+  .hint{font-size:12.5px;opacity:.8;max-width:440px;line-height:1.4}.warn{color:#ffb38a;font-size:13.5px;max-width:440px;line-height:1.4}
+  table.sum{border-collapse:collapse;font-size:14px;margin:4px auto}table.sum td,table.sum th{padding:3px 12px;border-bottom:1px solid rgba(255,255,255,.15)}table.sum th{color:#ff9ae0;font-weight:600}
+  .toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 160px);transform:translateX(-50%);background:rgba(0,0,0,.78);padding:10px 16px;border-radius:12px;font-size:14px;max-width:84%;text-align:center;transition:opacity .4s;pointer-events:none;opacity:0}.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div id="bgGrad"></div>
+<video id="bgVideo" class="hidden" playsinline muted autoplay></video>
+<div id="dim"></div><div id="stage"></div>
+<canvas id="fx"></canvas>
+<div id="danceBox" class="hidden"><canvas id="danceC"></canvas><div class="lab">PENARI</div><div class="nm" id="danceNm">—</div></div>
+<div class="pops" id="pops"></div>
+<div class="hud hidden" id="hud">
+  <div class="pc r p1" id="pc0"><div class="pn" id="pn0">KAMU</div><div class="big" id="sc0">0</div><div class="cb" id="cb0"></div><div class="sim"><i id="sim0"></i></div></div>
+  <div class="pc l p2 hidden" id="pc1"><div class="pn">P2</div><div class="big" id="sc1">0</div><div class="cb" id="cb1"></div><div class="sim"><i id="sim1"></i></div></div>
+  <div class="song"><div class="t" id="songT">—</div><div class="pb"><i id="songPb"></i></div></div>
+</div>
+<div class="msg" id="msg"></div><div class="count hidden" id="count"></div>
+<div id="waitBox" class="hidden"><div class="t">SIAP-SIAP</div><div class="s" id="waitS"></div></div>
+<div class="btns hidden" id="gameBtns"><button class="btn-sm" id="btnMute">🔊</button><button class="btn-sm" id="btnPause">⏸</button></div>
+
+<div class="overlay" id="menu">
+  <h1>IKUTI POSE<small>SENSOR TUBUH</small></h1>
+  <p>Pose menari muncul mengikuti irama. <b>Tirukan pose penari</b> tepat pada ketukan dan kumpulkan combo!</p>
+  <div class="songs" id="songBox"></div>
+  <div class="modes"><button class="btn mode on" id="btnM1">👤 1 Player</button><button class="btn mode" id="btnM2">👥 2 Player (adu)</button></div>
+  <div class="hint hidden" id="vsHelp"><b>2 Player:</b> berdirilah berdampingan (jarak ±1 meter). Keduanya meniru pose yang sama dan dinilai sendiri-sendiri. <b style="color:#ffb35a">P1 di kiri</b>, <b style="color:#6fc8ff">P2 di kanan</b>. Tanpa kamera: Spasi = P1, Enter = P2.</div>
+  <button class="btn" id="btnCam">📷 Menari (Kamera)</button>
+  <button class="btn alt" id="btnDemo">⌨️ Mode Demo (tekan Spasi tepat ketukan)</button>
+  <details class="camset"><summary>⚙️ Pengaturan</summary><div id="csMenu"></div></details>
+  <div class="hint">Berdirilah ±2 meter dari kamera dengan <b>kepala sampai pinggang</b> terlihat (kaki boleh tidak terlihat), di ruangan terang. Yang dinilai adalah <b>arah lengan dan badanmu</b>, bukan seberapa pas posisimu di layar, jadi bebas bergeser. Nyalakan suara untuk musiknya!</div>
+  <div class="warn hidden" id="menuMsg"></div>
+  <a class="btn ghost" href="../index.html">🎮 Daftar Game</a>
+</div>
+<div class="overlay hidden" id="over">
+  <h2 id="overTitle">SELESAI!</h2><div class="stars" id="overStars"></div><div class="big2" id="overGrade">A</div><p id="overInfo"></p><div id="overTable"></div>
+  <button class="btn" id="btnAgainCam">📷 Menari Lagi (Kamera)</button><button class="btn alt" id="btnAgainDemo">⌨️ Lagi (Demo)</button><button class="btn ghost" id="btnHome">🏠 Menu</button><a class="btn ghost" href="../index.html">🎮 Daftar Game</a>
+</div>
+<div class="overlay hidden" id="paused"><h2>JEDA</h2><details class="camset"><summary>⚙️ Pengaturan</summary><div id="csPause"></div></details><button class="btn" id="btnResume">▶ Lanjut</button><button class="btn ghost" id="btnQuit">🏠 Menu</button></div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem('ikuti_' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem('ikuti_' + k, JSON.stringify(v)); } catch (e) {} }
+  };
+  if (typeof THREE === 'undefined') { $('menuMsg').textContent = 'Gagal memuat Three.js (butuh internet). Periksa koneksi lalu muat ulang halaman.'; $('menuMsg').classList.remove('hidden'); return; }
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v)), lerp = (a, b, t) => a + (b - a) * t, rad = d => d * Math.PI / 180;
+  const SET_DEF = { tol: 5, dim: 0.4 };
+  const settings = Object.assign({ mute: false, song: 0 }, SET_DEF, store.get('settings', {}));
+  const saveSettings = () => store.set('settings', settings);
+
+  // ======================= MODEL POSE (sama dengan Lubang di Dinding) =======================
+  // satuan: 1 = lebar bahu; asal = tengah bahu; x kanan(+) layar cermin; y atas(+). sudut lengan: 0 = ke bawah, 90 = mendatar keluar, 180 = ke atas
+  const LEN = { arm1: 0.75, arm2: 0.62, torso: 1.25, hipW: 0.7, thigh: 1.1, shin: 1.05, head: 0.58 };
+  const dirArm = (side, a) => side < 0 ? { x: -Math.sin(rad(a)), y: -Math.cos(rad(a)) } : { x: Math.sin(rad(a)), y: -Math.cos(rad(a)) };
+  function buildPose(spec) {
+    const lean = rad(spec.lean || 0), ax = { x: Math.cos(lean), y: -Math.sin(lean) }, up = { x: Math.sin(lean), y: Math.cos(lean) }, J = { c: { x: 0, y: 0 } };
+    J.sL = { x: -0.5 * ax.x, y: -0.5 * ax.y }; J.sR = { x: 0.5 * ax.x, y: 0.5 * ax.y }; J.nose = { x: up.x * LEN.head, y: up.y * LEN.head };
+    const hc = { x: -up.x * LEN.torso, y: -up.y * LEN.torso }; J.hc = hc;
+    J.hL = { x: hc.x - LEN.hipW / 2 * ax.x, y: hc.y - LEN.hipW / 2 * ax.y }; J.hR = { x: hc.x + LEN.hipW / 2 * ax.x, y: hc.y + LEN.hipW / 2 * ax.y };
+    const arm = (side, s, a1, a2) => { const d1 = dirArm(side, a1), d2 = dirArm(side, a2), e = { x: s.x + d1.x * LEN.arm1, y: s.y + d1.y * LEN.arm1 }; return { e, w: { x: e.x + d2.x * LEN.arm2, y: e.y + d2.y * LEN.arm2 } }; };
+    const aL = arm(-1, J.sL, spec.a[0], spec.a[1]), aR = arm(1, J.sR, spec.a[2], spec.a[3]); J.eL = aL.e; J.wL = aL.w; J.eR = aR.e; J.wR = aR.w;
+    const leg = (side, h, deg) => { const d = { x: side * Math.sin(rad(deg)), y: -Math.cos(rad(deg)) }, kn = { x: h.x + d.x * LEN.thigh, y: h.y + d.y * LEN.thigh }; return { kn, an: { x: kn.x + d.x * LEN.shin, y: kn.y + d.y * LEN.shin } }; };
+    const lL = leg(-1, J.hL, spec.legL != null ? spec.legL : (spec.leg || 0)), lR = leg(1, J.hR, spec.legR != null ? spec.legR : (spec.leg || 0)); J.kL = lL.kn; J.aL = lL.an; J.kR = lR.kn; J.aR = lR.an;
+    return J;
+  }
+  const POSES = [
+    { id: 'tegak', name: 'TEGAK', tier: 1, spec: { a: [8, 8, 8, 8] } },
+    { id: 't', name: 'PESAWAT T', tier: 1, spec: { a: [90, 90, 90, 90] } },
+    { id: 'y', name: 'HURUF Y', tier: 1, spec: { a: [130, 130, 130, 130] } },
+    { id: 'hore', name: 'HORE!', tier: 1, spec: { a: [175, 175, 175, 175] } },
+    { id: 'kiriatas', name: 'TUNJUK KIRI', tier: 1, spec: { a: [175, 175, 8, 8] } },
+    { id: 'kananatas', name: 'TUNJUK KANAN', tier: 1, spec: { a: [8, 8, 175, 175] } },
+    { id: 'pinggang', name: 'TANGAN PINGGANG', tier: 2, spec: { a: [50, -50, 50, -50] } },
+    { id: 'otot', name: 'PAMER OTOT', tier: 2, spec: { a: [90, 180, 90, 180] } },
+    { id: 'disko1', name: 'DISKO KIRI', tier: 2, spec: { a: [175, 175, 50, -50] } },
+    { id: 'disko2', name: 'DISKO KANAN', tier: 2, spec: { a: [50, -50, 175, 175] } },
+    { id: 'robot', name: 'ROBOT', tier: 2, spec: { a: [90, 180, 90, 0] } },
+    { id: 'silang', name: 'SILANG', tier: 3, spec: { a: [40, -115, 40, -115] } },
+    { id: 'mirkiri', name: 'MIRING KIRI', tier: 3, spec: { a: [20, 20, 120, 120], lean: -28 } },
+    { id: 'mirkanan', name: 'MIRING KANAN', tier: 3, spec: { a: [120, 120, 20, 20], lean: 28 } },
+    { id: 'kuda', name: 'KUDA-KUDA', tier: 3, spec: { a: [90, 0, 90, 0], leg: 24 } },
+    { id: 'tendang1', name: 'TENDANG KIRI', tier: 3, spec: { a: [90, 90, 50, -50], legL: 40, legR: 0 } },
+    { id: 'tendang2', name: 'TENDANG KANAN', tier: 3, spec: { a: [50, -50, 90, 90], legL: 0, legR: 40 } },
+    { id: 'zigzag', name: 'ZIGZAG', tier: 3, spec: { a: [120, 30, 60, 170] } }
+  ];
+  POSES.forEach(p => { p.J = buildPose(p.spec); });
+
+  // ======================= PENILAIAN KEMIRIPAN (sudut tulang) =======================
+  // [dari, ke, bobot]; membandingkan ARAH tiap ruas tubuh pemain dengan pose target
+  const BONES = [['sL', 'eL', 1.2], ['eL', 'wL', 1.0], ['sR', 'eR', 1.2], ['eR', 'wR', 1.0], ['c', 'hc', 0.8], ['hL', 'kL', 0.6], ['kL', 'aL', 0.5], ['hR', 'kR', 0.6], ['kR', 'aR', 0.5]];
+  const angBetween = (u, v) => { const a = Math.hypot(u.x, u.y), b = Math.hypot(v.x, v.y); if (!a || !b) return null; return Math.acos(clamp((u.x * v.x + u.y * v.y) / (a * b), -1, 1)) * 180 / Math.PI; };
+  // kembalikan galat sudut rata-rata berbobot (derajat) atau null kalau tubuh tidak cukup terlihat
+  function poseError(Jp, Jt) {
+    let sw = 0, se = 0, armW = 0;
+    for (const [a, b, w] of BONES) {
+      const p = Jp[a], q = Jp[b], ta = Jt[a], tb = Jt[b]; if (!p || !q || !ta || !tb || p.v < 0.3 || q.v < 0.3) continue;
+      const vp = { x: q.x - p.x, y: q.y - p.y }, vt = { x: tb.x - ta.x, y: tb.y - ta.y };
+      if (Math.hypot(vp.x, vp.y) < 0.12 || Math.hypot(vt.x, vt.y) < 0.12) continue;
+      const e = angBetween(vp, vt); if (e == null) continue; sw += w; se += w * e * e; if (a[0] === 's' || a[0] === 'e') armW += w;
+    }
+    return armW < 2.0 ? null : Math.sqrt(se / sw);
+  }
+  const TOLM = () => 1 + (settings.tol - 5) * 0.08;
+  function gradeOf(err) { const f = TOLM(); if (err == null || err === Infinity) return 'miss'; if (err < 16 * f) return 'perfect'; if (err < 26 * f) return 'great'; if (err < 38 * f) return 'good'; if (err < 52 * f) return 'ok'; return 'miss'; }
+  const GP = { perfect: 100, great: 80, good: 50, ok: 20, miss: 0 }, GN = { perfect: 'SEMPURNA!', great: 'HEBAT!', good: 'BAGUS', ok: 'LUMAYAN', miss: 'MELESET' }, GC = { perfect: '#ffe36a', great: '#7fffd0', good: '#6fc8ff', ok: '#d8c8ff', miss: '#ff6a8a' };
+  const simPct = err => err == null ? 0 : clamp(1 - err / 60, 0, 1);
+
+  // ======================= LAGU & KOREOGRAFI =======================
+  const INTRO = 8, WIN = 0.38;
+  const SONGS = [
+    { id: 'pagi', name: 'Pagi Ceria', e: '🌅', bpm: 96, spacing: 4, moves: 16, tier: 1, seed: 11, root: 57, prog: [0, 5, 3, 4], style: 'pop', desc: 'Santai: pose dasar tiap 4 ketukan.' },
+    { id: 'disko', name: 'Disko Malam', e: '🪩', bpm: 116, spacing: 3, moves: 22, tier: 2, seed: 29, root: 52, prog: [0, 3, 5, 4], style: 'disco', desc: 'Sedang: pose lebih beragam, tiap 3 ketukan.' },
+    { id: 'turbo', name: 'Turbo Dance', e: '⚡', bpm: 132, spacing: 2, moves: 30, tier: 3, seed: 47, root: 50, prog: [0, 4, 5, 3], style: 'edm', desc: 'Sulit: semua pose, tiap 2 ketukan, ada tendangan.' }
+  ];
+  const MINOR = [0, 2, 3, 5, 7, 8, 10];
+  const mulberry = a => () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  function makeChoreo(sg) {
+    const rnd = mulberry(sg.seed), pool = POSES.filter(p => p.tier <= sg.tier && (sg.tier < 3 || p.tier >= 1)), out = []; let last = -1, last2 = -1;
+    for (let i = 0; i < sg.moves; i++) {
+      let k, g = 0; do { k = (rnd() * pool.length) | 0; } while ((k === last || k === last2) && g++ < 10);
+      last2 = last; last = k; out.push({ beat: INTRO + i * sg.spacing, pose: pool[k], res: [null, null], best: [Infinity, Infinity], done: false });
+    }
+    return out;
+  }
+
+  // ======================= PENARI 3D =======================
+  const dR = new THREE.WebGLRenderer({ canvas: $('danceC'), antialias: true, alpha: true }); dR.setClearColor(0x000000, 0); dR.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+  const dS = new THREE.Scene(), dC = new THREE.PerspectiveCamera(38, 0.7, 0.1, 30); dC.position.set(0, 1.18, 5.5); dC.lookAt(0, 1.1, 0);
+  dS.add(new THREE.HemisphereLight(0xffffff, 0x3a1a6a, 0.95)); const dL = new THREE.DirectionalLight(0xffffff, 0.8); dL.position.set(2, 4, 4); dS.add(dL);
+  const pL1 = new THREE.PointLight(0xff4aa8, 0.8, 8); pL1.position.set(-2, 2, 2); dS.add(pL1); const pL2 = new THREE.PointLight(0x4aa8ff, 0.8, 8); pL2.position.set(2, 2, 2); dS.add(pL2);
+  const M = (c, o) => new THREE.MeshStandardMaterial(Object.assign({ color: c, roughness: 0.55 }, o || {}));
+  const sph = (r, m, sx = 1, sy = 1, sz = 1) => { const o = new THREE.Mesh(new THREE.SphereGeometry(r, 18, 14), m); o.scale.set(sx, sy, sz); return o; };
+  const cyl = (rt, rb, h, m) => new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, 14), m);
+  const grp = (par, x = 0, y = 0, z = 0) => { const g = new THREE.Group(); g.position.set(x, y, z); par.add(g); return g; };
+  const put = (par, o, x = 0, y = 0, z = 0) => { o.position.set(x, y, z); par.add(o); return o; };
+  function limbGeo(len, r0, r1, bulge, at) { const pts = [], N = 12; for (let i = 0; i <= N; i++) { const t = i / N, w = t < at ? Math.sin(Math.PI / 2 * t / at) : Math.cos(Math.PI / 2 * (t - at) / (1 - at)); pts.push(new THREE.Vector2(lerp(r0, r1, t) + bulge * Math.max(0, w), -t * len)); } return new THREE.LatheGeometry(pts, 16); }
+  const limb = (len, r0, r1, b, at, m) => new THREE.Mesh(limbGeo(len, r0, r1, b, at), m);
+  function makeDancer() {
+    const root = new THREE.Group(), skin = M(0xe8b890, { side: THREE.DoubleSide }), top = M(0xff4aa8, { side: THREE.DoubleSide, emissive: 0x4a0a2a }), pants = M(0x2a2a5a, { side: THREE.DoubleSide }), shoe = M(0xffffff), accent = M(0xffd24a, { emissive: 0x4a3a00 }), hair = M(0x201018), dark = new THREE.MeshBasicMaterial({ color: 0x1a1210 }), white = M(0xffffff);
+    const box = (w, h, d, m) => new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
+    const hips = grp(root, 0, 0.95, 0); hips.add(sph(0.23, pants, 1.1, 0.75, 0.85));
+    const torso = grp(hips, 0, 0.12, 0); const tm = new THREE.Mesh(new THREE.LatheGeometry([[0.2, 0], [0.22, 0.2], [0.26, 0.42], [0.29, 0.56], [0.24, 0.66], [0.1, 0.72]].map(p => new THREE.Vector2(p[0], p[1])), 22), top); tm.scale.set(1.12, 1, 0.78); torso.add(tm);
+    put(torso, sph(0.3, skin, 1, 0.3, 0.7), 0, 0.64, 0); put(torso, box(0.5, 0.05, 0.3, accent), 0, 0.2, 0.04); put(torso, cyl(0.075, 0.09, 0.12, skin), 0, 0.74, 0);
+    const head = grp(torso, 0, 0.84, 0); put(head, sph(0.2, skin, 1, 1.1, 1.03), 0, 0.2, 0); put(head, sph(0.14, skin, 1, 0.7, 0.9), 0, 0.07, 0.03);
+    const cap = put(head, new THREE.Mesh(new THREE.SphereGeometry(0.215, 18, 12, 0, Math.PI * 2, 0, Math.PI * 0.6), hair), 0, 0.22, -0.01); cap.scale.set(1, 1.12, 1.07);
+    [-1, 1].forEach(s => { put(head, sph(0.042, white, 1.1, 1.2, 0.5), s * 0.075, 0.2, 0.18); put(head, sph(0.022, M(0x3a2a1a), 1, 1, 0.5), s * 0.075, 0.2, 0.195); put(head, sph(0.011, dark), s * 0.075, 0.2, 0.2); put(head, sph(0.04, skin, 0.5, 1, 0.8), s * 0.2, 0.14, 0); put(head, sph(0.03, M(0xff8a9a), 1.3, 0.8, 0.4), s * 0.12, 0.11, 0.16); const br = box(0.09, 0.02, 0.02, hair); br.position.set(s * 0.078, 0.255, 0.185); br.rotation.z = -s * 0.15; head.add(br); put(head, sph(0.05, accent), s * 0.21, 0.04, 0.02); });
+    put(head, sph(0.032, skin, 1, 1.2, 1.1), 0, 0.14, 0.2); const sm = new THREE.Mesh(new THREE.TorusGeometry(0.055, 0.01, 6, 14, Math.PI), M(0xb04040)); sm.rotation.z = Math.PI; sm.position.set(0, 0.095, 0.19); head.add(sm);
+    const mkArm = s => { const sh = grp(torso, s * 0.34, 0.62, 0); put(sh, sph(0.085, skin)); put(sh, limb(0.32, 0.065, 0.048, 0.016, 0.3, skin)); const el = grp(sh, 0, -0.32, 0); put(el, sph(0.05, skin)); put(el, limb(0.28, 0.048, 0.038, 0.012, 0.25, skin)); put(el, sph(0.062, skin, 1, 1.1, 0.8), 0, -0.31, 0); const wr = cyl(0.052, 0.052, 0.06, accent); wr.position.y = -0.27; el.add(wr); return { sh, el }; };
+    const mkLeg = s => { const hp = grp(hips, s * 0.12, -0.04, 0); put(hp, limb(0.46, 0.105, 0.07, 0.02, 0.3, pants)); const kn = grp(hp, 0, -0.46, 0); put(kn, limb(0.44, 0.07, 0.05, 0.02, 0.3, pants)); const ft = grp(kn, 0, -0.44, 0); put(ft, sph(0.085, shoe, 0.9, 0.6, 1.6), 0, -0.04, 0.06); put(ft, box(0.12, 0.025, 0.24, accent), 0, -0.1, 0.06); return { hp, kn, ft }; };
+    const aL = mkArm(-1), aR = mkArm(1), lL = mkLeg(-1), lR = mkLeg(1);
+    const sh2 = new THREE.Mesh(new THREE.CircleGeometry(0.5, 20), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: 0.3 })); sh2.rotation.x = -Math.PI / 2; sh2.position.y = 0.01; root.add(sh2);
+    dS.add(root); return { root, hips, torso, head, aL, aR, lL, lR, cur: {} };
+  }
+  const DANCER = makeDancer();
+  function applyDancer(spec, k, bounce) {
+    const T = { armL: rad(spec.a[0]), armR: rad(spec.a[2]), elL: rad(spec.a[1] - spec.a[0]), elR: rad(spec.a[3] - spec.a[2]), legL: rad(spec.legL != null ? spec.legL : (spec.leg || 0)), legR: rad(spec.legR != null ? spec.legR : (spec.leg || 0)), lean: rad(spec.lean || 0) }, c = DANCER.cur;
+    for (const key in T) { if (c[key] === undefined) c[key] = T[key]; c[key] += (T[key] - c[key]) * k; }
+    DANCER.aL.sh.rotation.z = -c.armL; DANCER.aR.sh.rotation.z = c.armR; DANCER.aL.el.rotation.z = -c.elL; DANCER.aR.el.rotation.z = c.elR;
+    DANCER.lL.hp.rotation.z = -Math.max(0.05, c.legL); DANCER.lR.hp.rotation.z = Math.max(0.05, c.legR); DANCER.torso.rotation.z = -c.lean; DANCER.head.rotation.z = c.lean * 0.4; DANCER.hips.position.y = 0.95 - 0.05 * bounce; DANCER.root.rotation.y = Math.sin(elapsed * 1.5) * 0.08;
+  }
+
+  // ======================= MUSIK SINTETIS =======================
+  let AC = null, master = null, noiseBuf = null;
+  function initAudio() { try { if (!AC) { AC = new (window.AudioContext || window.webkitAudioContext)(); master = AC.createGain(); master.gain.value = settings.mute ? 0 : 0.55; master.connect(AC.destination); noiseBuf = AC.createBuffer(1, AC.sampleRate, AC.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; } if (AC.state === 'suspended') AC.resume(); } catch (e) { AC = null; } }
+  const mtof = n => 440 * Math.pow(2, (n - 69) / 12);
+  function osc(freq, t, dur, type, gain, f1) { const o = AC.createOscillator(), g = AC.createGain(); o.type = type; o.frequency.setValueAtTime(freq, t); if (f1) o.frequency.exponentialRampToValueAtTime(f1, t + dur); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + 0.05); }
+  function noiseHit(t, dur, type, f0, gain) { const s = AC.createBufferSource(); s.buffer = noiseBuf; const f = AC.createBiquadFilter(); f.type = type; f.frequency.value = f0; const g = AC.createGain(); g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); s.connect(f); f.connect(g); g.connect(master); s.start(t); s.stop(t + dur + 0.05); }
+  function playStep(sg, i, t) {
+    const beat = Math.floor(i / 2), off = i % 2, bar = Math.floor(beat / 4), bt = beat % 4, chord = sg.prog[bar % sg.prog.length], root = sg.root + MINOR[chord % 7] - (chord > 4 ? 12 : 0);
+    const count = beat < INTRO, loud = beat >= INTRO;
+    if (count) { if (!off && (bt === 0 || beat >= 4)) osc(bt === 0 ? 1400 : 1000, t, 0.05, 'square', 0.12); }
+    if (!off && (loud || beat >= 4)) osc(150, t, 0.16, 'sine', 0.5, 45);                                   // kick
+    if (!off && (bt === 1 || bt === 3) && (loud || beat >= 6)) { noiseHit(t, 0.12, 'bandpass', 1800, 0.35); osc(220, t, 0.08, 'triangle', 0.1); }   // snare
+    if (beat >= 2) noiseHit(t, off ? 0.05 : 0.025, 'highpass', 7000, off ? 0.16 : 0.08);                    // hi-hat
+    if (loud) {
+      if (sg.style === 'edm') { if (off || bt !== 0) osc(mtof(root - 12), t, 0.2, 'sawtooth', 0.13); }
+      else if (!off) osc(mtof(root - 12), t, 0.28, sg.style === 'disco' ? 'sawtooth' : 'triangle', 0.16);
+      const arp = [0, 7, 12, 7][(i >> 0) % 4] + (bt >= 2 ? 3 : 0); if (off || sg.style !== 'pop') osc(mtof(root + 12 + arp), t, 0.18, sg.style === 'edm' ? 'square' : 'triangle', 0.07);
+      if (!off && bt === 0 && sg.style !== 'edm') { [0, 3, 7].forEach(n => osc(mtof(root + n), t, 0.9, 'sine', 0.05)); }
+    }
+  }
+  let nextStep = 0, songT = 0;
+  function scheduleAudio(sg) {
+    if (!AC || settings.mute) return; const bd = 60 / sg.bpm / 2, ahead = 0.3, base = AC.currentTime - songT;
+    if (nextStep * bd < songT - 0.05) nextStep = Math.ceil(songT / bd);
+    while (nextStep * bd < songT + ahead) { const tt = base + nextStep * bd; if (tt >= AC.currentTime) { try { playStep(sg, nextStep, tt); } catch (e) {} } nextStep++; }
+  }
+  const sfx = { tick() { if (AC && !settings.mute) osc(900, AC.currentTime, 0.06, 'square', 0.12); }, hit(g) { if (!AC || settings.mute) return; const t = AC.currentTime; if (g === 'perfect') { osc(1100, t, 0.1, 'triangle', 0.16); osc(1650, t + 0.06, 0.12, 'triangle', 0.12); } else if (g === 'great') osc(900, t, 0.1, 'triangle', 0.14); else if (g === 'good') osc(700, t, 0.1, 'triangle', 0.1); else if (g === 'miss') osc(220, t, 0.18, 'sawtooth', 0.1, 120); }, end() { if (!AC || settings.mute) return; const t = AC.currentTime; [523, 659, 784, 1047].forEach((f, i) => osc(f, t + i * 0.12, 0.2, 'triangle', 0.18)); } };
+
+  // ======================= STATE =======================
+  let state = 'menu', versus = false, useCam = false, elapsed = 0, song = null, choreo = [], beatDur = 0.6, lastBeat = -1, pulse = 0;
+  const mkPly = i => ({ i, J: null, valid: false, miss: 0, score: 0, combo: 0, maxCombo: 0, counts: { perfect: 0, great: 0, good: 0, ok: 0, miss: 0 }, sim: 0, scr: null, bones: [], raw: null });
+  let PLY = [mkPly(0)];
+  const NP = () => versus ? 2 : 1, PCOL = [['#ff9ae0', '#ffb35a'], ['#6fc8ff', '#6fc8ff']];
+
+  // ======================= HUD =======================
+  const show = (id, on) => $(id).classList.toggle('hidden', !on);
+  let toastTimer = 0;
+  function toast(msg, ms = 3000) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), ms); }
+  function say(text, color) { const m = $('msg'); m.textContent = text; m.style.color = color || '#fff'; m.classList.remove('show'); void m.offsetWidth; m.classList.add('show'); }
+  function popText(txt, px, py, color) { const el = document.createElement('b'); el.textContent = txt; el.style.left = px + 'px'; el.style.top = py + 'px'; el.style.color = color || '#fff'; $('pops').appendChild(el); setTimeout(() => el.remove(), 950); }
+  function updateHud() { PLY.forEach((p, i) => { $('sc' + i).textContent = p.score; $('cb' + i).textContent = p.combo >= 3 ? '🔥 x' + p.combo : ''; $('pn' + i).textContent = versus ? 'P' + (i + 1) : 'KAMU'; }); }
+
+  // ======================= KAMERA =======================
+  const MP = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14', POSE_MODEL = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
+  const cam = { on: false, stream: null, lm: null, loading: null, lastVT: -1, lastTs: 0, lastCx: [null, null] };
+  const video = $('bgVideo'), fx = $('fx'), fctx = fx.getContext('2d'); let SW = innerWidth, SH = innerHeight;
+  function loadPose() {
+    if (cam.lm) return Promise.resolve(cam.lm); if (cam.loading) return cam.loading;
+    cam.loading = (async () => { const vision = await import(`${MP}/vision_bundle.mjs`), files = await vision.FilesetResolver.forVisionTasks(`${MP}/wasm`); const opts = d => ({ baseOptions: { modelAssetPath: POSE_MODEL, delegate: d }, runningMode: 'VIDEO', numPoses: 2, minPoseDetectionConfidence: 0.5, minPosePresenceConfidence: 0.5, minTrackingConfidence: 0.5 }); try { cam.lm = await vision.PoseLandmarker.createFromOptions(files, opts('GPU')); } catch (e) { cam.lm = await vision.PoseLandmarker.createFromOptions(files, opts('CPU')); } return cam.lm; })();
+    cam.loading.catch(() => { cam.loading = null; }); return cam.loading;
+  }
+  const menuMsg = m => { const e = $('menuMsg'); e.textContent = m || ''; e.classList.toggle('hidden', !m); };
+  async function enableCamera() {
+    menuMsg('');
+    if (window.isSecureContext === false || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { menuMsg('Kamera hanya bisa dipakai lewat HTTPS (atau localhost) di browser yang mendukung. Coba Mode Demo dulu.'); return false; }
+    toast('Menyiapkan kamera & pendeteksi tubuh…', 9000);
+    try { if (!cam.stream) cam.stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30 } } }); video.srcObject = cam.stream; await video.play().catch(() => {}); }
+    catch (e) { stopCamera(); $('toast').classList.remove('show'); const n = e && e.name; menuMsg(n === 'NotAllowedError' || n === 'SecurityError' ? 'Izin kamera ditolak. Izinkan kamera untuk situs ini di pengaturan browser, lalu coba lagi.' : n === 'NotFoundError' ? 'Tidak ada kamera yang ditemukan di perangkat ini.' : 'Kamera tidak bisa dibuka (mungkin sedang dipakai aplikasi lain).'); return false; }
+    try { await loadPose(); } catch (e) { stopCamera(); $('toast').classList.remove('show'); menuMsg('Pendeteksi tubuh gagal diunduh. Pastikan internet tersambung dan cdn.jsdelivr.net / storage.googleapis.com tidak diblokir.'); return false; }
+    try { await cam.lm.setOptions({ numPoses: versus ? 2 : 1 }); } catch (e) {}
+    $('toast').classList.remove('show'); show('bgVideo', true); show('bgGrad', false); return true;
+  }
+  function stopCamera() { cam.on = false; if (cam.stream) { for (const t of cam.stream.getTracks()) t.stop(); cam.stream = null; } video.srcObject = null; show('bgVideo', false); show('bgGrad', true); }
+  function imgToScreen(nx, ny) { const vw = video.videoWidth || 640, vh = video.videoHeight || 480, sc = Math.max(SW / vw, SH / vh), dw = vw * sc, dh = vh * sc; return { x: (SW - dw) / 2 + (1 - nx) * dw, y: (SH - dh) / 2 + ny * dh }; }
+  const LMI = { nose: 0, sL: 11, sR: 12, eL: 13, eR: 14, wL: 15, wR: 16, hL: 23, hR: 24, kL: 25, kR: 26, aL: 27, aR: 28 };
+  // landmark -> koordinat tubuh (satuan lebar bahu, asal tengah bahu, cermin, y atas +)
+  function bodyFrom(h) {
+    const vw = video.videoWidth || 640, vh = video.videoHeight || 480, P = {}; for (const n in LMI) { const l = h[LMI[n]]; P[n] = { x: (1 - l.x) * vw, y: l.y * vh, v: l.visibility == null ? 1 : l.visibility, nx: l.x, ny: l.y }; }
+    if (P.sL.x > P.sR.x) for (const a of ['s', 'e', 'w', 'h', 'k', 'a']) { const t = P[a + 'L']; P[a + 'L'] = P[a + 'R']; P[a + 'R'] = t; }
+    const sw = Math.hypot(P.sR.x - P.sL.x, P.sR.y - P.sL.y); if (sw < 18 || P.sL.v < 0.4 || P.sR.v < 0.4) return null;
+    const cx = (P.sL.x + P.sR.x) / 2, cy = (P.sL.y + P.sR.y) / 2, J = { c: { x: 0, y: 0, v: 1 } };
+    for (const n in P) J[n] = { x: (P[n].x - cx) / sw, y: -(P[n].y - cy) / sw, v: P[n].v };
+    J.hc = { x: (J.hL.x + J.hR.x) / 2, y: (J.hL.y + J.hR.y) / 2, v: Math.min(J.hL.v, J.hR.v) };
+    return { J, raw: P, cx, sw };
+  }
+  const SKB = [['sL', 'sR'], ['sL', 'eL'], ['eL', 'wL'], ['sR', 'eR'], ['eR', 'wR'], ['sL', 'hL'], ['sR', 'hR'], ['hL', 'hR'], ['hL', 'kL'], ['kL', 'aL'], ['hR', 'kR'], ['kR', 'aR']];
+  function detectPose(now) {
+    if (!cam.on || !cam.lm || video.readyState < 2 || video.currentTime === cam.lastVT) return;
+    cam.lastVT = video.currentTime; cam.lastTs = Math.max(cam.lastTs + 1, now); let res; try { res = cam.lm.detectForVideo(video, cam.lastTs); } catch (e) { return; }
+    const items = ((res && res.landmarks) || []).map(h => ({ h, b: bodyFrom(h) })).filter(o => o.b); let asg = [null, null];
+    if (!versus) asg[0] = items.sort((a, b) => b.b.sw - a.b.sw)[0] || null;
+    else if (items.length >= 2) { items.sort((a, b) => a.b.cx - b.b.cx); asg = [items[0], items[items.length - 1]]; }
+    else if (items.length === 1) { const q = items[0], vw = video.videoWidth || 640, d = k => cam.lastCx[k] == null ? Infinity : Math.abs(q.b.cx - cam.lastCx[k]); const i = (d(0) === Infinity && d(1) === Infinity) ? (q.b.cx < vw / 2 ? 0 : 1) : (d(0) <= d(1) ? 0 : 1); asg[i] = q; }
+    PLY.forEach((p, i) => { const a = asg[i]; if (a) { cam.lastCx[i] = a.b.cx; p.J = a.b.J; p.raw = a.b.raw; p.valid = true; p.miss = 0; } else if (++p.miss > 8) { p.valid = false; p.J = null; p.raw = null; } });
+  }
+
+  // ======================= PERMAINAN =======================
+  function judgeFrame() {
+    if (state !== 'play') return;
+    for (const m of choreo) {
+      if (m.done) continue; const t = m.beat * beatDur, dtm = songT - t;
+      if (dtm >= -WIN && dtm <= WIN) PLY.forEach((p, i) => { if (p.valid && p.J) { const e = poseError(p.J, m.pose.J); if (e != null && e < m.best[i]) m.best[i] = e; if (Math.abs(dtm) < 0.12 || true) p.sim = simPct(e); } });
+      if (dtm > WIN) finalize(m);
+    }
+  }
+  function finalize(m) {
+    m.done = true; const bonusScr = [];
+    PLY.forEach((p, i) => {
+      const g = gradeOf(m.best[i]); m.res[i] = g; p.counts[g]++;
+      if (g === 'miss' || g === 'ok') p.combo = 0; else { p.combo++; p.maxCombo = Math.max(p.maxCombo, p.combo); }
+      const mult = 1 + Math.min(1, Math.floor(p.combo / 5) * 0.1), pts = Math.round(GP[g] * mult); p.score += pts;
+      const sx = p.scr ? p.scr.x : SW * (versus ? (i ? 0.7 : 0.3) : 0.6), sy = p.scr ? p.scr.y : SH * 0.4; popText(GN[g] + (pts ? ' +' + pts : ''), sx, sy, GC[g]); if (g === 'perfect') confetti(i);
+      if (i === 0) sfx.hit(g);
+    });
+    flashT = 1; lastGrade = m.res.slice(); updateHud();
+  }
+  let flashT = 0, lastGrade = [null, null], conf = [];
+  function confetti(i) { const x0 = PLY[i].scr ? PLY[i].scr.x : SW / 2, y0 = PLY[i].scr ? PLY[i].scr.y : SH / 2; for (let k = 0; k < 16; k++) conf.push({ x: x0, y: y0, vx: (Math.random() - 0.5) * 500, vy: -Math.random() * 450 - 100, c: ['#ff4aa8', '#ffd24a', '#4aa8ff', '#7fffd0'][k % 4], life: 0.9, s: 5 + Math.random() * 5 }); }
+  const PAD = 0.04;
+  function startSong(withCam) {
+    const sg = SONGS[settings.song]; song = sg; beatDur = 60 / sg.bpm; choreo = makeChoreo(sg); songT = 0; nextStep = 0; lastBeat = -1; conf = [];
+    PLY.forEach(p => { p.score = 0; p.combo = 0; p.maxCombo = 0; p.counts = { perfect: 0, great: 0, good: 0, ok: 0, miss: 0 }; p.sim = 0; });
+    show('hud', true); show('danceBox', true); resize(); show('gameBtns', true); show('pc1', versus); $('pc0').classList.toggle('r', !versus); $('pc0').classList.toggle('l', versus); $('pc1').classList.toggle('r', versus); $('songT').textContent = sg.e + ' ' + sg.name; updateHud();
+    state = 'play'; say('SIAP!', '#ffd24a'); if (withCam) toast('Tirukan pose penari tepat pada ketukan. Kerangka menyala saat mirip!', 4000); else toast('Demo: tekan Spasi (P1) / Enter (P2) tepat pada ketukan!', 4500);
+  }
+  function endSong() {
+    state = 'over'; stopCamera(); sfx.end(); const total = choreo.length;
+    const rows = PLY.map(p => { const pts = p.counts.perfect * 100 + p.counts.great * 80 + p.counts.good * 50 + p.counts.ok * 20, pct = pts / (total * 100), stars = pct >= 0.92 ? 5 : pct >= 0.78 ? 4 : pct >= 0.6 ? 3 : pct >= 0.4 ? 2 : pct >= 0.2 ? 1 : 0; return { p, pct, stars, rank: pct >= 0.92 ? 'S' : pct >= 0.78 ? 'A' : pct >= 0.6 ? 'B' : pct >= 0.4 ? 'C' : 'D' }; });
+    let title = 'SELESAI!', grade = rows[0].rank, info;
+    if (versus) { const a = rows[0].p.score, b = rows[1].p.score; title = a === b ? 'SERI!' : '🏆 P' + (a > b ? 1 : 2) + ' MENANG!'; grade = a + ' : ' + b; info = `Combo terbaik P1 ${rows[0].p.maxCombo} / P2 ${rows[1].p.maxCombo} · lagu ${song.name}`; }
+    else { const r = rows[0], key = 'best_' + song.id, prev = store.get(key, 0), nb = r.p.score > prev; if (nb) store.set(key, r.p.score); info = `${r.p.score} poin${nb ? ' — REKOR BARU!' : ''} · combo terbaik ${r.p.maxCombo} · ${song.name}${prev && !nb ? ' · rekor ' + prev : ''}`; }
+    $('overTitle').textContent = title; $('overGrade').textContent = grade; $('overStars').textContent = versus ? '' : '★'.repeat(rows[0].stars) + '☆'.repeat(5 - rows[0].stars); $('overInfo').textContent = info;
+    const cn = ['perfect', 'great', 'good', 'ok', 'miss']; let t = '<table class="sum"><tr><th></th>' + PLY.map((p, i) => `<th>${versus ? 'P' + (i + 1) : 'Hasil'}</th>`).join('') + '</tr>'; cn.forEach(k => { t += `<tr><td>${GN[k]}</td>` + PLY.map(p => `<td>${p.counts[k]}</td>`).join('') + '</tr>'; }); t += '</table>'; $('overTable').innerHTML = t;
+    ['hud', 'gameBtns', 'danceBox', 'waitBox', 'count'].forEach(i => show(i, false)); show('over', true);
+  }
+  function toMenu() { stopCamera(); state = 'menu'; ['paused', 'over', 'hud', 'gameBtns', 'danceBox', 'count', 'waitBox'].forEach(i => show(i, false)); show('menu', true); }
+  async function startGame(withCam) {
+    initAudio();
+    if (withCam) { const ok = await enableCamera(); if (!ok) return; } else stopCamera();
+    useCam = withCam; cam.on = withCam; cam.lastCx = [null, null]; PLY = (versus ? [0, 1] : [0]).map(mkPly); show('menu', false); show('over', false); show('paused', false);
+    if (withCam) { state = 'wait'; waitT = 0; show('waitBox', true); show('gameBtns', true); $('waitS').textContent = versus ? 'Berdirilah berdampingan di depan kamera sampai kerangka kalian muncul…' : 'Berdiri ±2 meter dari kamera sampai kerangkamu muncul di layar…'; }
+    else startSong(false);
+  }
+  let waitT = 0, pausedFrom = 'play';
+  function pauseGame() { if (state !== 'play') return; pausedFrom = state; state = 'paused'; show('paused', true); }
+  function resumeGame() { if (state !== 'paused') return; show('paused', false); state = 'play'; }
+  addEventListener('keydown', e => {
+    const k = e.key; if (k === 'p' || k === 'Escape') { if (state === 'paused') resumeGame(); else pauseGame(); return; }
+    if (state === 'play' && !useCam && !e.repeat) { if (k === ' ') { e.preventDefault(); tapTiming(0); } else if (k === 'Enter' && versus) tapTiming(1); }
+  });
+  // mode demo: ketukan dinilai dari ketepatan waktu saja
+  function tapTiming(pi) {
+    let bm = null, bd = Infinity; for (const m of choreo) { if (m.done) continue; const d = Math.abs(songT - m.beat * beatDur); if (d < bd) { bd = d; bm = m; } }
+    if (!bm || bd > WIN) { const p = PLY[pi]; p.combo = 0; popText('TERLALU CEPAT', SW * 0.5, SH * 0.4, '#ff6a8a'); updateHud(); return; }
+    const e = bd < 0.1 ? 8 : bd < 0.18 ? 22 : bd < 0.26 ? 34 : 46; if (e < bm.best[pi]) bm.best[pi] = e;
+  }
+
+  // ======================= MENU & PENGATURAN =======================
+  (() => { const box = $('songBox'); SONGS.forEach((sg, i) => { const b = document.createElement('button'); b.className = 'songbtn' + (i === settings.song ? ' on' : ''); b.innerHTML = `<span class="e">${sg.e}</span><span><div class="n">${sg.name}</div><div class="d">${sg.desc}</div></span><span class="bt">${sg.bpm} BPM</span>`; b.onclick = () => { settings.song = i; saveSettings(); [...box.children].forEach((x, k) => x.classList.toggle('on', k === i)); }; box.appendChild(b); }); })();
+  const csInputs = [];
+  function buildSettings(box) {
+    const defs = [{ k: 'tol', label: 'Toleransi pose', min: 1, max: 10, step: 1, fmt: v => v, tip: 'Tinggi = pose yang kurang mirip tetap dihitung bagus' }, { k: 'dim', label: 'Redup latar kamera', min: 0, max: 0.8, step: 0.05, fmt: v => Math.round(v * 100) + '%', tip: '' }];
+    for (const c of defs) { const d = document.createElement('div'); d.className = 'cs'; d.innerHTML = `<div class="row"><label>${c.label}</label><input type="range" min="${c.min}" max="${c.max}" step="${c.step}"><span class="val"></span></div>${c.tip ? `<small>${c.tip}</small>` : ''}`; const inp = d.querySelector('input'), val = d.querySelector('.val'); inp.value = settings[c.k]; val.textContent = c.fmt(settings[c.k]); inp.oninput = () => { settings[c.k] = +inp.value; saveSettings(); sync(); applyDim(); }; csInputs.push({ c, inp, val }); box.appendChild(d); }
+  }
+  function sync() { for (const x of csInputs) { x.inp.value = settings[x.c.k]; x.val.textContent = x.c.fmt(settings[x.c.k]); } }
+  const applyDim = () => { $('dim').style.opacity = settings.dim; };
+  buildSettings($('csMenu')); buildSettings($('csPause')); applyDim();
+  function setVersus(v) { versus = v; $('btnM1').classList.toggle('on', !v); $('btnM2').classList.toggle('on', v); show('vsHelp', v); }
+  $('btnM1').onclick = () => setVersus(false); $('btnM2').onclick = () => setVersus(true);
+  $('btnCam').onclick = () => startGame(true); $('btnDemo').onclick = () => startGame(false); $('btnAgainCam').onclick = () => startGame(true); $('btnAgainDemo').onclick = () => startGame(false);
+  $('btnHome').onclick = toMenu; $('btnQuit').onclick = toMenu; $('btnPause').onclick = pauseGame; $('btnResume').onclick = resumeGame;
+  const muteLabel = () => { $('btnMute').textContent = settings.mute ? '🔇' : '🔊'; }; $('btnMute').onclick = () => { settings.mute = !settings.mute; if (master) master.gain.value = settings.mute ? 0 : 0.55; saveSettings(); muteLabel(); }; muteLabel();
+  document.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(); });
+
+  // ======================= GAMBAR =======================
+  const iconCache = {};
+  function icon(p) { if (iconCache[p.id]) return iconCache[p.id]; const c = document.createElement('canvas'); c.width = 96; c.height = 116; const x = c.getContext('2d'), J = p.J, sx = 96 / 5.2, sy = 116 / 6.2, X = v => 48 + v * sx, Y = v => 116 * 0.3 - v * sy; x.lineCap = 'round'; x.lineJoin = 'round'; x.strokeStyle = '#fff'; x.fillStyle = '#fff'; x.lineWidth = 6;
+    x.globalAlpha = 0.25; x.beginPath(); x.moveTo(X(J.sL.x), Y(J.sL.y)); x.lineTo(X(J.sR.x), Y(J.sR.y)); x.lineTo(X(J.hR.x), Y(J.hR.y)); x.lineTo(X(J.hL.x), Y(J.hL.y)); x.closePath(); x.fill(); x.globalAlpha = 1; x.beginPath(); for (const [a, b] of [['sL', 'sR'], ['sL', 'eL'], ['eL', 'wL'], ['sR', 'eR'], ['eR', 'wR'], ['sL', 'hL'], ['sR', 'hR'], ['hL', 'hR'], ['hL', 'kL'], ['kL', 'aL'], ['hR', 'kR'], ['kR', 'aR'], ['c', 'nose']]) { x.moveTo(X(J[a].x), Y(J[a].y)); x.lineTo(X(J[b].x), Y(J[b].y)); } x.stroke(); x.beginPath(); x.arc(X(J.nose.x), Y(J.nose.y), 0.3 * sx, 0, 6.283); x.fill(); return (iconCache[p.id] = c); }
+  function drawLane() {
+    if (!song || state !== 'play') return; const lw = Math.min(SW * 0.62, 640), x0 = SW / 2 - lw / 2 + 30, y = 12 + 8, hh = 96, horizon = beatDur * Math.max(5, song.spacing + 2);
+    fctx.fillStyle = 'rgba(0,0,0,.45)'; fctx.beginPath(); fctx.roundRect ? fctx.roundRect(SW / 2 - lw / 2 - 10, y - 8, lw + 20, hh + 22, 16) : fctx.rect(SW / 2 - lw / 2 - 10, y - 8, lw + 20, hh + 22); fctx.fill();
+    const pulseR = 1 + 0.12 * pulse; fctx.strokeStyle = '#ffd24a'; fctx.lineWidth = 4; fctx.beginPath(); fctx.arc(x0, y + hh / 2, 48 * pulseR, 0, 6.283); fctx.stroke();
+    for (const m of choreo) { const t = m.beat * beatDur, d = t - songT; if (d < -0.6 || d > horizon) continue; const px = x0 + (d / horizon) * (lw - 40), near = d >= -0.3 && d < beatDur * 1.5, sc = near ? 1 : 0.8, im = icon(m.pose); fctx.globalAlpha = d < 0 ? Math.max(0, 1 + d / 0.6) : 1;
+      fctx.fillStyle = near ? 'rgba(255,106,200,.55)' : 'rgba(255,255,255,.18)'; fctx.fillRect(px - 36 * sc, y + hh / 2 - 46 * sc, 72 * sc, 92 * sc); fctx.drawImage(im, px - 36 * sc, y + hh / 2 - 46 * sc, 72 * sc, 88 * sc);
+      if (d < 0 && m.res[0]) { fctx.fillStyle = GC[m.res[0]]; fctx.font = 'bold 14px system-ui'; fctx.textAlign = 'center'; fctx.fillText(GN[m.res[0]], px, y + hh / 2 + 56 * sc); } fctx.globalAlpha = 1; }
+  }
+  function drawFx(dt) {
+    fctx.clearRect(0, 0, SW, SH); drawLane();
+    if (useCam) PLY.forEach((p, i) => {
+      if (!p.valid || !p.raw) return; const P = p.raw, pt = n => imgToScreen(P[n].nx, P[n].ny), sim = p.sim, match = sim > 0.6, col = match ? '#7fff9a' : (versus ? PCOL[i][0] : '#ff9ae0');
+      fctx.lineCap = 'round'; fctx.shadowColor = col; fctx.shadowBlur = match ? 20 : 10; fctx.strokeStyle = col; fctx.lineWidth = Math.max(4, SH * 0.011);
+      for (const [a, b] of SKB) { if (P[a].v < 0.3 || P[b].v < 0.3) continue; const A = pt(a), B = pt(b); fctx.beginPath(); fctx.moveTo(A.x, A.y); fctx.lineTo(B.x, B.y); fctx.stroke(); }
+      fctx.shadowBlur = 0; fctx.fillStyle = '#fff'; for (const n of ['nose', 'wL', 'wR']) { if (P[n].v < 0.3) continue; const A = pt(n); fctx.beginPath(); fctx.arc(A.x, A.y, 6, 0, 6.283); fctx.fill(); }
+      const S = imgToScreen((P.sL.nx + P.sR.nx) / 2, (P.sL.ny + P.sR.ny) / 2), Hh = P.hL.v > 0.3 ? imgToScreen((P.hL.nx + P.hR.nx) / 2, (P.hL.ny + P.hR.ny) / 2) : { x: S.x, y: S.y + 150 }; p.scr = { x: S.x, y: S.y - 60 };
+      $('sim' + i).style.width = Math.round(sim * 100) + '%';
+    });
+    else PLY.forEach((p, i) => { $('sim' + i).style.width = '0%'; });
+    for (const c of conf) { c.life -= dt; c.x += c.vx * dt; c.y += c.vy * dt; c.vy += 900 * dt; if (c.life > 0) { fctx.globalAlpha = Math.min(1, c.life * 2); fctx.fillStyle = c.c; fctx.fillRect(c.x, c.y, c.s, c.s); } } conf = conf.filter(c => c.life > 0); fctx.globalAlpha = 1;
+  }
+  function resize() { SW = innerWidth; SH = innerHeight; const dpr = Math.min(devicePixelRatio || 1, 2); fx.width = SW * dpr; fx.height = SH * dpr; fctx.setTransform(dpr, 0, 0, dpr, 0, 0); const b = $('danceBox').getBoundingClientRect(), w = Math.max(60, b.width || 240), h = Math.max(80, b.height || 330); dR.setSize(w, h, false); dC.aspect = w / h; dC.updateProjectionMatrix(); }
+  addEventListener('resize', resize);
+
+  // ======================= LOOP =======================
+  let last = performance.now();
+  function update(dt) {
+    elapsed += dt; pulse = Math.max(0, pulse - dt * 4); flashT = Math.max(0, flashT - dt * 2.5);
+    if (state === 'wait') { const ok = PLY.every(p => p.valid); waitT = ok ? waitT + dt : 0; $('waitS').textContent = ok ? 'Terdeteksi! Siap menari…' : (versus ? `Terdeteksi ${PLY.filter(p => p.valid).length}/2 orang — berdirilah berdampingan, badan atas terlihat.` : 'Tubuhmu belum terlihat. Mundur sedikit sampai kepala, bahu, dan lengan terlihat.'); if (waitT > 0.9) { show('waitBox', false); startSong(true); } }
+    else if (state === 'play') {
+      songT += dt; scheduleAudio(song); const b = Math.floor(songT / beatDur); if (b !== lastBeat) { lastBeat = b; pulse = 1; if (!AC) sfx.tick(); }
+      judgeFrame(); const last = choreo[choreo.length - 1]; $('songPb').style.width = clamp(songT / ((last.beat + 3) * beatDur), 0, 1) * 100 + '%';
+      if (songT > (last.beat + 3) * beatDur) endSong();
+      if (b < INTRO) { const left = INTRO - b; if (b !== cdB) { cdB = b; if (left <= 4) { show('count', true); $('count').textContent = left; $('count').classList.remove('go'); void $('count').offsetWidth; $('count').classList.add('go'); } } } else if (cdB < INTRO) { cdB = INTRO; show('count', false); }
+      $('stage').style.opacity = 0.22 + 0.3 * pulse + 0.25 * flashT;
+      // penari: tiba di pose berikutnya sedikit sebelum ketukan penilaian
+      let nm = null, prev = POSES[1]; for (const m of choreo) { const tt = m.beat * beatDur - 0.35 * beatDur; if (songT < tt + 0.05 || m === choreo[choreo.length - 1]) { nm = m; break; } prev = m.pose; }
+      if (!nm) nm = choreo[choreo.length - 1]; const idx = choreo.indexOf(nm), pv = idx > 0 ? choreo[idx - 1].pose : POSES[0]; const tArr = nm.beat * beatDur - 0.35 * beatDur, u = clamp(1 - (tArr - songT) / (beatDur * 0.9), 0, 1);
+      const e = u * u * (3 - 2 * u), spec = { a: nm.pose.spec.a.map((v, k) => lerp(pv.spec.a[k], v, e)), leg: 0, legL: lerp(pv.spec.legL != null ? pv.spec.legL : (pv.spec.leg || 0), nm.pose.spec.legL != null ? nm.pose.spec.legL : (nm.pose.spec.leg || 0), e), legR: lerp(pv.spec.legR != null ? pv.spec.legR : (pv.spec.leg || 0), nm.pose.spec.legR != null ? nm.pose.spec.legR : (nm.pose.spec.leg || 0), e), lean: lerp(pv.spec.lean || 0, nm.pose.spec.lean || 0, e) };
+      applyDancer(spec, 1, pulse); $('danceNm').textContent = u >= 1 || songT < INTRO * beatDur ? nm.pose.name : 'SIAP: ' + nm.pose.name;
+    } else if (state === 'menu' || state === 'over') { applyDancer(POSES[3 + ((elapsed / 1.2) | 0) % 3].spec, Math.min(1, dt * 8), 0); }
+    dR.render(dS, dC);
+  }
+  let cdB = -1;
+  function frame(now) {
+    const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
+    detectPose(now); if (state !== 'paused') update(dt); drawFx(dt); requestAnimationFrame(frame);
+  }
+  resize(); setVersus(false); toMenu(); requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#07130d">
+<title>Ular 3D Sensor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bangers&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="../shared/menu.css">
+</head>
+<body>
+<div class="pops" id="pops"></div>
+<div class="hud hidden" id="hud">
+  <div><div class="score" id="score">0</div><div class="sub" id="bestHud">TERBAIK 0</div></div>
+  <div class="right"><div class="sub" id="lenHud">PANJANG 4</div><div class="sub" id="goldHud"></div></div>
+</div>
+<div class="hud vs hidden" id="hudVs">
+  <div class="pbox p1"><div class="pn">P1 ●</div><div class="score" id="vs1">0</div><div class="lives" id="vl1"></div></div>
+  <div class="mid" id="goldMid"></div>
+  <div class="pbox p2"><div class="pn">● P2</div><div class="score" id="vs2">0</div><div class="lives" id="vl2"></div></div>
+</div>
+<div class="count hidden" id="count"></div>
+<div id="camBox" class="hidden"><video id="camVideo" playsinline muted autoplay></video><div class="arrow" id="arrow0"></div><div class="arrow" id="arrow1"></div></div>
+<div class="btns hidden" id="gameBtns">
+  <button class="btn-sm" id="btnMute">🔊</button>
+  <button class="btn-sm" id="btnPause">⏸</button>
+</div>
+
+<div class="overlay" id="menu">
+  <h1>ULAR 3D<small>SENSOR</small></h1>
+  <p>Arahkan <b>jari telunjuk</b> ke kamera ke arah yang kamu mau (atas, bawah, kiri, kanan). Makan 🍎, jangan tabrak dinding atau badan sendiri. Apel emas ⭐ bernilai besar tapi cepat hilang.</p>
+  <div class="modes"><button class="btn mode on" id="btnM1">👤 1 Player</button><button class="btn mode" id="btnM2">👥 2 Player</button></div>
+  <div class="hint hidden" id="vsHelp"><b>2 Player:</b> satu arena, dua ular — <b style="color:#ffa23c">P1 oranye</b> dan <b style="color:#4fb8ff">P2 biru</b>, masing-masing 3 ❤. Rebutan 🍎 dan ⭐. Menabrak dinding, badan sendiri, atau ular lawan = −1 ❤ lalu muncul lagi (kebal 2,5 detik). Nyawa habis duluan = kalah. <b>Kamera:</b> tunjukkan 2 tangan, tangan kiri jadi P1, kanan jadi P2. <b>Sentuhan:</b> P1 geser di sisi kiri layar, P2 di sisi kanan. <b>Keyboard:</b> P1 WASD, P2 panah.</div>
+  <button class="btn cam" id="btnCam">📷 Main pakai Kamera (Jari)</button>
+  <button class="btn" id="btnTouch">👆 Main pakai Sentuhan / Keyboard</button>
+  <div class="opts">
+    <label>Tembus dinding <input type="checkbox" id="oWrap"></label>
+    <label>Tampilkan pratinjau kamera <input type="checkbox" id="oPrev" checked></label>
+  </div>
+  <details class="camset"><summary>📷 Pengaturan Kamera</summary><div id="csMenu"></div></details>
+  <div class="hint">Sentuhan: geser jari ke arah tujuan. Keyboard: panah atau WASD, spasi untuk jeda.</div>
+  <div class="warn hidden" id="menuMsg"></div>
+  <a class="btn ghost" href="../index.html">🎮 Daftar Game</a>
+</div>
+
+<div class="overlay hidden" id="over">
+  <h2 id="overTitle">GAME OVER</h2>
+  <div class="big" id="overScore">0</div>
+  <p id="overInfo"></p>
+  <button class="btn cam" id="btnAgainCam">📷 Main Lagi (Kamera)</button>
+  <button class="btn" id="btnAgainTouch">👆 Main Lagi (Sentuhan)</button>
+  <button class="btn ghost" id="btnHome">🏠 Menu</button>
+  <a class="btn ghost" href="../index.html">🎮 Daftar Game</a>
+</div>
+
+<div class="overlay hidden" id="paused">
+  <h2 style="color:#b6ff6a;text-shadow:0 4px 0 #1d5a00">JEDA</h2>
+  <details class="camset" id="csPauseBox"><summary>📷 Pengaturan Kamera</summary><div id="csPause"></div></details>
+  <button class="btn" id="btnResume">▶ Lanjut</button>
+  <button class="btn ghost" id="btnQuit">🏠 Menu</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>if (typeof THREE === 'undefined') { var mm = document.getElementById('menuMsg'); mm.textContent = 'Gagal memuat Three.js (butuh internet). Periksa koneksi lalu muat ulang halaman.'; mm.classList.remove('hidden'); }</script>
+<script src="../shared/camguide.js"></script>
+<script src="js/00-dasar.js"></script>
+<script src="js/01-three-js-scene.js"></script>
+<script src="js/02-audio.js"></script>
+<script src="js/03-state-permainan.js"></script>
+<script src="js/04-hud.js"></script>
+<script src="js/05-kontrol-sentuhan-keyboard.js"></script>
+<script src="js/06-kontrol-kamera-arah.js"></script>
+<script src="js/07-pengaturan-responsivitas-kamera.js"></script>
+<script src="js/08-alur-game.js"></script>
+<script src="js/09-render.js"></script>
+<script src="js/10-loop.js"></script>
+<script src="../shared/menu.js"></script>
+<script>/* hitung "dimainkan" global (sekali per tab per game) */(function(){try{var s=location.pathname.split('/').filter(Boolean);if(s.length&&/\.html?$/i.test(s[s.length-1]))s.pop();var g=s.pop();if(!g)return;var k='played_'+g;if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1');fetch('../api/hit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:g+'/'}),keepalive:true}).catch(function(){})}catch(e){}})();</script>
+<script src="js/99-preview.js"></script>
+</body>
+</html>

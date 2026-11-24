@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0a1030">
+<title>Pukul Target Sensor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bangers&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="../shared/menu.css">
+</head>
+<body>
+<div id="bgGrad"></div>
+<video id="bgVideo" class="hidden" playsinline muted autoplay></video>
+<div id="dim"></div>
+<canvas id="gl"></canvas>
+<canvas id="fx"></canvas>
+<div class="pops" id="pops"></div>
+<div class="hud hidden" id="hud">
+  <div><div class="score" id="score">0</div><div class="sub" id="hitHud">0 target</div><div class="combo" id="comboHud"></div></div>
+  <div class="right"><div class="lives" id="lives"></div><div class="sub" id="bestHud"></div></div>
+</div>
+<div class="hud vs hidden" id="hudVs">
+  <div class="pbox p1"><div class="pn">P1 ●</div><div class="score" id="vs1">0</div><div class="combo" id="vc1"></div></div>
+  <div class="mid"><div class="timer" id="timer">1:30</div></div>
+  <div class="pbox p2"><div class="pn">● P2</div><div class="score" id="vs2">0</div><div class="combo" id="vc2"></div></div>
+</div>
+<div id="fever" class="hidden"><span id="feverTxt">HUJAN BOLA</span><div class="bar"><i id="feverFill"></i></div></div>
+<div class="msg" id="msg"></div><div class="flash" id="flash"></div><div class="count hidden" id="count"></div>
+<div id="waitBox" class="hidden"><div class="t" id="waitT">SIAP-SIAP</div><div class="s" id="waitS"></div></div>
+<div class="btns hidden" id="gameBtns"><button class="btn-sm" id="btnMute">🔊</button><button class="btn-sm" id="btnPause">⏸</button></div>
+
+<div class="overlay" id="menu">
+  <h1>PUKUL TARGET<small>SENSOR TUBUH</small></h1>
+  <p>Kamu melihat dirimu di layar. Bola-bola melayang ke arahmu — <b>pukul dengan tangan</b> (atau kepala, siku, lutut!) sebelum lewat. Hindari 💣!</p>
+  <div class="tips">
+    <div class="tip"><b>🔵</b>Bola biasa<br>+10</div><div class="tip"><b>⭐</b>Emas<br>+50, cepat</div><div class="tip"><b>🛡️</b>Besar<br>2x pukul</div><div class="tip"><b>💗</b>Hati<br>+1 nyawa</div><div class="tip"><b>💣</b>Bom<br>jangan!</div>
+  </div>
+  <div class="modes"><button class="btn mode on" id="btnM1">👤 1 Player</button><button class="btn mode" id="btnM2">👥 2 Player</button></div>
+  <div class="hint hidden" id="vsHelp"><b>2 Player (adu skor 90 detik):</b> berdirilah berdampingan. Siapa yang <b>lebih dulu menyentuh</b> sebuah bola, dialah yang dapat poinnya. <b style="color:#ffb35a">P1 di kiri</b>, <b style="color:#6fc8ff">P2 di kanan</b>. Kena bom = −30 poin. Tanpa kamera: P1 pakai sisi kiri layar, P2 sisi kanan.</div>
+  <div class="modes" id="diffBox"><button class="btn mode" data-d="0">😊 Mudah</button><button class="btn mode on" data-d="1">😎 Normal</button><button class="btn mode" data-d="2">🔥 Sulit</button></div>
+  <button class="btn cam" id="btnCam">📷 Main pakai Kamera (Tubuh)</button>
+  <button class="btn" id="btnPtr">🖱️ Main pakai Mouse / Sentuhan</button>
+  <details class="camset"><summary>⚙️ Pengaturan</summary><div id="csMenu"></div></details>
+  <div class="hint">Berdirilah ±1,5–2,5 meter dari kamera dengan badan atas terlihat jelas dan ruangan terang. Target muncul dalam jangkauan lenganmu. Tanpa kamera: gerakkan mouse (atau sentuh layar) sebagai "tanganmu".</div>
+  <div class="warn hidden" id="menuMsg"></div>
+  <a class="btn ghost" href="../index.html">🎮 Daftar Game</a>
+</div>
+
+<div class="overlay hidden" id="over">
+  <h2 id="overTitle">GAME OVER</h2><div class="big" id="overScore">0</div><p id="overInfo"></p>
+  <button class="btn cam" id="btnAgainCam">📷 Main Lagi (Kamera)</button><button class="btn" id="btnAgainPtr">🖱️ Main Lagi (Mouse)</button>
+  <button class="btn ghost" id="btnHome">🏠 Menu</button><a class="btn ghost" href="../index.html">🎮 Daftar Game</a>
+</div>
+<div class="overlay hidden" id="paused">
+  <h2 style="color:#ffd23f;text-shadow:0 4px 0 #7a3b00">JEDA</h2>
+  <details class="camset"><summary>⚙️ Pengaturan</summary><div id="csPause"></div></details>
+  <button class="btn" id="btnResume">▶ Lanjut</button><button class="btn ghost" id="btnQuit">🏠 Menu</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>if (typeof THREE === 'undefined') { var mm = document.getElementById('menuMsg'); mm.textContent = 'Gagal memuat Three.js (butuh internet). Periksa koneksi lalu muat ulang halaman.'; mm.classList.remove('hidden'); }</script>
+<script src="../shared/camguide.js"></script>
+<script src="js/00-dasar.js"></script>
+<script src="js/01-three-js-transparan.js"></script>
+<script src="js/02-audio.js"></script>
+<script src="js/03-target.js"></script>
+<script src="js/04-hud.js"></script>
+<script src="js/05-skor.js"></script>
+<script src="js/06-input-pointer-tanpa.js"></script>
+<script src="js/07-input-kamera-pose.js"></script>
+<script src="js/08-pengaturan.js"></script>
+<script src="js/09-alur-game.js"></script>
+<script src="js/10-update.js"></script>
+<script src="js/11-render.js"></script>
+<script src="../shared/menu.js"></script>
+<script>/* hitung "dimainkan" global (sekali per tab per game) */(function(){try{var s=location.pathname.split('/').filter(Boolean);if(s.length&&/\.html?$/i.test(s[s.length-1]))s.pop();var g=s.pop();if(!g)return;var k='played_'+g;if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1');fetch('../api/hit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:g+'/'}),keepalive:true}).catch(function(){})}catch(e){}})();</script>
+<script src="js/99-preview.js"></script>
+</body>
+</html>

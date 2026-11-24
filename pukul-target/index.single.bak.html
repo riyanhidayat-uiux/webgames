@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0a1030">
+<title>Pukul Target Sensor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bangers&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#0a1030;touch-action:none;-webkit-user-select:none;user-select:none;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#fff}
+  #bgGrad{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 30%,#2a2a7a 0%,#12124a 45%,#070720 100%);overflow:hidden}
+  #bgGrad::before{content:"";position:absolute;inset:-50%;background-image:radial-gradient(2px 2px at 20px 30px,#fff,transparent),radial-gradient(2px 2px at 90px 80px,#9fd0ff,transparent),radial-gradient(1.5px 1.5px at 150px 20px,#fff,transparent),radial-gradient(1.5px 1.5px at 60px 140px,#ffd9ff,transparent);background-size:180px 180px;opacity:.55;animation:drift 60s linear infinite}
+  @keyframes drift{to{transform:translate(-180px,180px)}}
+  #bgVideo{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);background:#000}
+  #dim{position:fixed;inset:0;pointer-events:none;background:#06081c;opacity:.35}
+  canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+  #fx{pointer-events:none}
+  .hud{position:fixed;top:0;left:0;right:0;padding:calc(env(safe-area-inset-top) + 10px) 16px 0;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;font-family:Bangers,Impact,"Arial Black",sans-serif}
+  .score{font-size:48px;line-height:1;color:#ffd23f;text-shadow:0 3px 0 #7a3b00,0 0 16px rgba(255,200,60,.5);letter-spacing:1px;transition:transform .1s}
+  .score.pop{transform:scale(1.25)}
+  .sub{font-size:17px;color:#e0e6ff;letter-spacing:1px;margin-top:3px;text-shadow:0 2px 4px #000}
+  .combo{font-size:24px;color:#7fffd0;text-shadow:0 2px 0 #0a5a48;margin-top:2px}
+  .right{text-align:right}
+  .lives{font-size:30px;line-height:1;letter-spacing:2px}
+  .lives span{display:inline-block;color:#ff3b6a;text-shadow:0 2px 0 #5a0020;transition:transform .25s,color .25s}
+  .lives span.lost{color:rgba(255,255,255,.2);text-shadow:none;transform:scale(.8)}
+  .pbox .pn{font-size:15px;letter-spacing:2px;text-shadow:0 2px 4px #000}.pbox.p1 .pn,.pbox.p1 .score{color:#ffb35a}.pbox.p2 .pn,.pbox.p2 .score{color:#6fc8ff}.pbox.p2{text-align:right}
+  .hud.vs .score{font-size:42px}.hud .mid{text-align:center;padding-top:2px}.timer{font-size:44px;color:#fff;text-shadow:0 3px 0 #000,0 0 14px rgba(160,200,255,.7)}.timer.low{color:#ff5a3c;animation:tl .5s ease-in-out infinite alternate}
+  @keyframes tl{to{transform:scale(1.15)}}
+  #fever{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 14px);transform:translateX(-50%);width:min(60vw,360px);pointer-events:none;text-align:center;font-family:Bangers,Impact,sans-serif;font-size:16px;letter-spacing:2px;color:#ffe36a;text-shadow:0 2px 4px #000}
+  #fever .bar{height:10px;border-radius:6px;background:rgba(255,255,255,.2);overflow:hidden;border:1px solid rgba(255,255,255,.3);margin-top:3px}#fever .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffd23f,#ff8a1f);transition:width .15s}
+  #fever.on .bar{box-shadow:0 0 14px #ff8a1f,0 0 28px rgba(255,90,20,.7)}#fever.on .bar i{background:linear-gradient(90deg,#fff6a0,#ffb000,#ff3b30,#ffb000,#fff6a0);background-size:200% 100%;animation:fv .6s linear infinite}
+  @keyframes fv{to{background-position:200% 0}}
+  .pops{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+  .pops b{position:absolute;font-family:Bangers,Impact,sans-serif;font-size:34px;text-shadow:0 3px 0 rgba(0,0,0,.6),0 0 10px rgba(0,0,0,.5);transform:translate(-50%,-50%);animation:up .9s ease-out forwards;white-space:nowrap}
+  @keyframes up{0%{opacity:0;transform:translate(-50%,-30%) scale(.4)}20%{opacity:1;transform:translate(-50%,-60%) scale(1.25)}100%{opacity:0;transform:translate(-50%,-200%) scale(1)}}
+  .msg{position:fixed;left:0;right:0;top:32%;text-align:center;pointer-events:none;font-family:Bangers,Impact,sans-serif;font-size:clamp(44px,11vw,100px);letter-spacing:2px;color:#fff;text-shadow:0 5px 0 #0a1030,0 0 30px rgba(120,180,255,.8);opacity:0}
+  .msg.show{animation:msg 1.1s ease-out forwards}
+  @keyframes msg{0%{opacity:0;transform:scale(.4)}18%{opacity:1;transform:scale(1.2)}32%{transform:scale(1)}80%{opacity:1}100%{opacity:0;transform:translateY(-24px)}}
+  .count{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;font-family:Bangers,Impact,sans-serif;font-size:150px;color:#fff;text-shadow:0 6px 0 #1f4fb0,0 0 40px rgba(120,180,255,.8)}
+  .count.go{animation:cnt .5s ease-out}@keyframes cnt{from{transform:scale(2);opacity:0}to{transform:scale(1);opacity:1}}
+  .flash{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 40%,rgba(255,40,80,.6));opacity:0}.flash.on{animation:fl .5s ease-out}@keyframes fl{0%{opacity:1}100%{opacity:0}}
+  .btns{position:fixed;right:12px;bottom:calc(env(safe-area-inset-bottom) + 12px);display:flex;gap:8px}
+  .btn-sm{background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:999px;padding:9px 14px;font-size:14px;font-family:inherit;cursor:pointer}
+  .overlay{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;background:radial-gradient(ellipse at center,rgba(10,16,48,.6),rgba(4,6,22,.94));gap:14px;overflow:auto}
+  .hidden{display:none!important}
+  h1{font-family:Bangers,Impact,"Arial Black",sans-serif;font-weight:400;font-size:clamp(50px,14vw,100px);margin:0 0 6px;line-height:.9;color:#ffd23f;text-shadow:0 5px 0 #a33a00,0 12px 26px rgba(0,0,0,.6);letter-spacing:2px;transform:rotate(-3deg)}
+  h1 small{display:block;font-size:.42em;color:#7fd0ff;text-shadow:0 3px 0 #145f8a;letter-spacing:3px}
+  h2{font-family:Bangers,Impact,"Arial Black",sans-serif;font-weight:400;font-size:56px;margin:0;color:#ff5a8a;text-shadow:0 4px 0 #5a0d2a;letter-spacing:2px}
+  .big{font-family:Bangers,Impact,sans-serif;font-size:72px;color:#ffd23f;text-shadow:0 4px 0 #7a3b00;line-height:1}
+  p{max-width:430px;margin:0;color:#d8e0ff;line-height:1.45;font-size:15px}
+  .btn{font-family:Bangers,Impact,"Arial Black",sans-serif;font-size:26px;letter-spacing:1px;padding:14px 26px;border:0;border-radius:16px;color:#2a1200;background:linear-gradient(#ffe066,#ffb000);box-shadow:0 5px 0 #a35f00,0 10px 20px rgba(0,0,0,.4);min-width:250px;cursor:pointer;text-decoration:none;display:inline-block}
+  .btn:active{transform:translateY(3px);box-shadow:0 2px 0 #a35f00}
+  .btn.cam{background:linear-gradient(#9fe7ff,#2fa8e8);box-shadow:0 5px 0 #145f8a,0 10px 20px rgba(0,0,0,.4);color:#02263a}
+  .btn.ghost{font-size:20px;padding:10px 20px;min-width:0;background:rgba(255,255,255,.12);color:#d8e0ff;box-shadow:none;border:1px solid rgba(255,255,255,.25)}
+  .btn.tiny{font-size:16px;padding:6px 14px;min-width:0}
+  .btn.mode{font-size:18px;padding:8px 16px;min-width:0;background:rgba(255,255,255,.12);color:#d8e0ff;box-shadow:none;border:1px solid rgba(255,255,255,.25)}
+  .btn.mode.on{background:linear-gradient(#ffe066,#ffb000);color:#2a1200;border-color:#ffb000}
+  .modes{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+  .tips{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;max-width:460px;width:100%}
+  .tip{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:8px 3px;font-size:11.5px;line-height:1.25}.tip b{display:block;font-size:26px;margin-bottom:2px}
+  details.camset{max-width:430px;width:100%;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:8px 14px;text-align:left;font-size:14px;color:#d8e0ff}
+  details.camset summary{cursor:pointer;padding:4px 0;font-weight:600}
+  .cs{margin:12px 0}.cs .row{display:flex;justify-content:space-between;align-items:center;gap:10px}.cs input[type=range]{width:150px;accent-color:#ffb000}.cs .val{min-width:36px;text-align:right;color:#ffd23f}.cs small{display:block;opacity:.65;font-size:12px;margin-top:2px}
+  .hint{font-size:12.5px;opacity:.78;max-width:430px;line-height:1.4}.warn{color:#ffb38a;font-size:13.5px;max-width:430px;line-height:1.4}
+  #waitBox{position:fixed;left:50%;top:22%;transform:translateX(-50%);width:min(86vw,400px);background:rgba(0,0,0,.72);border:1px solid rgba(255,255,255,.25);border-radius:16px;padding:14px 18px;text-align:center;pointer-events:none}
+  #waitBox .t{font-family:Bangers,Impact,sans-serif;font-size:28px;color:#ffd23f;letter-spacing:1px}#waitBox .s{font-size:14px;margin:6px 0 4px;color:#d8e0ff;line-height:1.4}
+  .toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 100px);transform:translateX(-50%);background:rgba(0,0,0,.78);padding:10px 16px;border-radius:12px;font-size:14px;max-width:84%;text-align:center;transition:opacity .4s;pointer-events:none;opacity:0}.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div id="bgGrad"></div>
+<video id="bgVideo" class="hidden" playsinline muted autoplay></video>
+<div id="dim"></div>
+<canvas id="gl"></canvas>
+<canvas id="fx"></canvas>
+<div class="pops" id="pops"></div>
+<div class="hud hidden" id="hud">
+  <div><div class="score" id="score">0</div><div class="sub" id="hitHud">0 target</div><div class="combo" id="comboHud"></div></div>
+  <div class="right"><div class="lives" id="lives"></div><div class="sub" id="bestHud"></div></div>
+</div>
+<div class="hud vs hidden" id="hudVs">
+  <div class="pbox p1"><div class="pn">P1 ●</div><div class="score" id="vs1">0</div><div class="combo" id="vc1"></div></div>
+  <div class="mid"><div class="timer" id="timer">1:30</div></div>
+  <div class="pbox p2"><div class="pn">● P2</div><div class="score" id="vs2">0</div><div class="combo" id="vc2"></div></div>
+</div>
+<div id="fever" class="hidden"><span id="feverTxt">HUJAN BOLA</span><div class="bar"><i id="feverFill"></i></div></div>
+<div class="msg" id="msg"></div><div class="flash" id="flash"></div><div class="count hidden" id="count"></div>
+<div id="waitBox" class="hidden"><div class="t" id="waitT">SIAP-SIAP</div><div class="s" id="waitS"></div></div>
+<div class="btns hidden" id="gameBtns"><button class="btn-sm" id="btnMute">🔊</button><button class="btn-sm" id="btnPause">⏸</button></div>
+
+<div class="overlay" id="menu">
+  <h1>PUKUL TARGET<small>SENSOR TUBUH</small></h1>
+  <p>Kamu melihat dirimu di layar. Bola-bola melayang ke arahmu — <b>pukul dengan tangan</b> (atau kepala, siku, lutut!) sebelum lewat. Hindari 💣!</p>
+  <div class="tips">
+    <div class="tip"><b>🔵</b>Bola biasa<br>+10</div><div class="tip"><b>⭐</b>Emas<br>+50, cepat</div><div class="tip"><b>🛡️</b>Besar<br>2x pukul</div><div class="tip"><b>💗</b>Hati<br>+1 nyawa</div><div class="tip"><b>💣</b>Bom<br>jangan!</div>
+  </div>
+  <div class="modes"><button class="btn mode on" id="btnM1">👤 1 Player</button><button class="btn mode" id="btnM2">👥 2 Player</button></div>
+  <div class="hint hidden" id="vsHelp"><b>2 Player (adu skor 90 detik):</b> berdirilah berdampingan. Siapa yang <b>lebih dulu menyentuh</b> sebuah bola, dialah yang dapat poinnya. <b style="color:#ffb35a">P1 di kiri</b>, <b style="color:#6fc8ff">P2 di kanan</b>. Kena bom = −30 poin. Tanpa kamera: P1 pakai sisi kiri layar, P2 sisi kanan.</div>
+  <div class="modes" id="diffBox"><button class="btn mode" data-d="0">😊 Mudah</button><button class="btn mode on" data-d="1">😎 Normal</button><button class="btn mode" data-d="2">🔥 Sulit</button></div>
+  <button class="btn cam" id="btnCam">📷 Main pakai Kamera (Tubuh)</button>
+  <button class="btn" id="btnPtr">🖱️ Main pakai Mouse / Sentuhan</button>
+  <details class="camset"><summary>⚙️ Pengaturan</summary><div id="csMenu"></div></details>
+  <div class="hint">Berdirilah ±1,5–2,5 meter dari kamera dengan badan atas terlihat jelas dan ruangan terang. Target muncul dalam jangkauan lenganmu. Tanpa kamera: gerakkan mouse (atau sentuh layar) sebagai "tanganmu".</div>
+  <div class="warn hidden" id="menuMsg"></div>
+  <a class="btn ghost" href="../index.html">🎮 Daftar Game</a>
+</div>
+
+<div class="overlay hidden" id="over">
+  <h2 id="overTitle">GAME OVER</h2><div class="big" id="overScore">0</div><p id="overInfo"></p>
+  <button class="btn cam" id="btnAgainCam">📷 Main Lagi (Kamera)</button><button class="btn" id="btnAgainPtr">🖱️ Main Lagi (Mouse)</button>
+  <button class="btn ghost" id="btnHome">🏠 Menu</button><a class="btn ghost" href="../index.html">🎮 Daftar Game</a>
+</div>
+<div class="overlay hidden" id="paused">
+  <h2 style="color:#ffd23f;text-shadow:0 4px 0 #7a3b00">JEDA</h2>
+  <details class="camset"><summary>⚙️ Pengaturan</summary><div id="csPause"></div></details>
+  <button class="btn" id="btnResume">▶ Lanjut</button><button class="btn ghost" id="btnQuit">🏠 Menu</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem('puk_' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem('puk_' + k, JSON.stringify(v)); } catch (e) {} }
+  };
+  if (typeof THREE === 'undefined') { $('menuMsg').textContent = 'Gagal memuat Three.js (butuh internet). Periksa koneksi lalu muat ulang halaman.'; $('menuMsg').classList.remove('hidden'); return; }
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v)), lerp = (a, b, t) => a + (b - a) * t, rr = (a, b) => a + Math.random() * (b - a);
+  const SET_DEF = { size: 1, dim: 0.35 };
+  const settings = Object.assign({ mute: false, diff: 1 }, SET_DEF, store.get('settings', {}));
+  const saveSettings = () => store.set('settings', settings);
+
+  // ======================= THREE.JS (transparan di atas video) =======================
+  const D = 10, FOV = 50, TAN = Math.tan(FOV * Math.PI / 360);
+  const renderer = new THREE.WebGLRenderer({ canvas: $('gl'), antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2)); renderer.setClearColor(0x000000, 0);
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(FOV, 1, 0.1, 120); camera.position.set(0, 0, D);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.85)); const dl = new THREE.DirectionalLight(0xffffff, 0.9); dl.position.set(3, 5, 8); scene.add(dl);
+  let SW = innerWidth, SH = innerHeight;
+  const pxToWorld = (px, py) => ({ x: (px / SW - 0.5) * 2 * D * TAN * (SW / SH), y: (0.5 - py / SH) * 2 * D * TAN });
+  const tmpV = new THREE.Vector3();
+  const worldToPx = (x, y, z) => { tmpV.set(x, y, z).project(camera); return { x: (tmpV.x * 0.5 + 0.5) * SW, y: (-tmpV.y * 0.5 + 0.5) * SH }; };
+  const mkCanvas = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
+  const mkTex = c => { const t = new THREE.CanvasTexture(c); t.anisotropy = 4; return t; };
+  const glowTex = (() => { const c = mkCanvas(64, 64), x = c.getContext('2d'), g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, 'rgba(255,255,255,.9)'); g.addColorStop(0.4, 'rgba(255,255,255,.35)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, 64, 64); return mkTex(c); })();
+  const iconTex = emoji => { const c = mkCanvas(128, 128), x = c.getContext('2d'); x.font = '92px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(emoji, 64, 70); return mkTex(c); };
+  const ICON = { gold: iconTex('⭐'), big: iconTex('🛡️'), heart: iconTex('💗'), bomb: iconTex('💣') };
+  const PALETTE = [0x3aa8ff, 0xff5aa8, 0x5aff9a, 0xffb02a, 0xb06aff, 0x2affe0];
+  const bubGeo = new THREE.SphereGeometry(1, 26, 20), ringGeo = new THREE.TorusGeometry(1.18, 0.07, 8, 32);
+  const matCache = {};
+  const bubMat = (hex, op) => matCache[hex + '_' + op] || (matCache[hex + '_' + op] = new THREE.MeshStandardMaterial({ color: hex, emissive: hex, emissiveIntensity: 0.55, transparent: true, opacity: op, roughness: 0.15, metalness: 0.2 }));
+  const coreMat = {}; const getCore = hex => coreMat[hex] || (coreMat[hex] = new THREE.MeshBasicMaterial({ color: hex, transparent: true, opacity: 0.55 }));
+
+  // ---------- efek pecah ----------
+  const PART = [];
+  for (let i = 0; i < 160; i++) { const m = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 5), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true })); m.visible = false; scene.add(m); PART.push({ m, vx: 0, vy: 0, vz: 0, life: 0, max: 1 }); }
+  const RINGS = [];
+  for (let i = 0; i < 14; i++) { const m = new THREE.Mesh(new THREE.RingGeometry(0.85, 1, 32), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, side: THREE.DoubleSide, depthWrite: false })); m.visible = false; scene.add(m); RINGS.push({ m, life: 0, max: 0.5, r: 1 }); }
+  function burst(x, y, z, n, colors, speed = 5) {
+    for (const p of PART) { if (n <= 0) break; if (p.life > 0) continue; n--; const a = Math.random() * 6.283, e = (Math.random() - 0.5) * 3, s = (0.3 + Math.random()) * speed;
+      p.vx = Math.cos(a) * s; p.vy = Math.sin(a) * s + 1; p.vz = e * s * 0.4 + 2; p.life = p.max = 0.5 + Math.random() * 0.6; p.m.position.set(x, y, z); p.m.material.color.set(colors[(Math.random() * colors.length) | 0]); p.m.visible = true; p.m.scale.setScalar(0.5 + Math.random() * 1.3); }
+  }
+  function ringFx(x, y, z, r, color) { const q = RINGS.find(g => g.life <= 0); if (!q) return; q.life = q.max = 0.45; q.r = r; q.m.position.set(x, y, z); q.m.material.color.set(color); q.m.visible = true; }
+
+  // ======================= AUDIO =======================
+  let AC = null, master = null, noiseBuf = null;
+  function initAudio() { try { if (!AC) { AC = new (window.AudioContext || window.webkitAudioContext)(); master = AC.createGain(); master.gain.value = settings.mute ? 0 : 0.55; master.connect(AC.destination); noiseBuf = AC.createBuffer(1, AC.sampleRate, AC.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; } if (AC.state === 'suspended') AC.resume(); } catch (e) { AC = null; } }
+  function noise(dur, type, f0, f1, gain, q = 1) { if (!AC || settings.mute) return; const t = AC.currentTime, s = AC.createBufferSource(); s.buffer = noiseBuf; const f = AC.createBiquadFilter(); f.type = type; f.Q.value = q; f.frequency.setValueAtTime(f0, t); f.frequency.exponentialRampToValueAtTime(f1, t + dur); const g = AC.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); s.connect(f); f.connect(g); g.connect(master); s.start(t); s.stop(t + dur + 0.05); }
+  function tone(dur, f0, f1, gain, type = 'sine', delay = 0) { if (!AC || settings.mute) return; const t = AC.currentTime + delay, o = AC.createOscillator(), g = AC.createGain(); o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + 0.05); }
+  const sfx = {
+    pop(c) { const f = 500 + Math.min(c, 12) * 45; tone(0.09, f, f * 1.8, 0.2, 'sine'); noise(0.06, 'bandpass', 2400, 900, 0.18, 2); },
+    gold() { [880, 1175, 1568].forEach((f, i) => tone(0.12, f, f * 1.01, 0.18, 'triangle', i * 0.06)); },
+    hit2() { tone(0.1, 300, 520, 0.2, 'square'); }, big() { tone(0.14, 400, 800, 0.22, 'triangle'); noise(0.1, 'bandpass', 1800, 700, 0.2, 1.5); },
+    heart() { [523, 659, 784].forEach((f, i) => tone(0.14, f, f * 1.01, 0.18, 'triangle', i * 0.08)); },
+    bomb() { noise(0.4, 'lowpass', 900, 100, 0.7); tone(0.3, 150, 40, 0.45, 'sawtooth'); },
+    miss() { tone(0.25, 330, 150, 0.14, 'triangle'); }, fever() { tone(0.6, 250, 900, 0.2, 'sawtooth'); noise(0.5, 'bandpass', 800, 3500, 0.14); },
+    tick() { tone(0.08, 700, 700, 0.14, 'square'); }, over() { [392, 330, 262, 196].forEach((f, i) => tone(0.22, f, f * 0.98, 0.2, 'triangle', i * 0.16)); }
+  };
+
+  // ======================= STATE =======================
+  let state = 'menu', useCam = false, versus = false, elapsed = 0, best = store.get('best', 0);
+  let bubbles = [], spawnT = 0, tPlay = 0, hitsTot = 0, missTot = 0, lives = 5, timeLeft = 90, fever = { c: 0, t: 0 }, nextPref = 0, waitT = 0, dieT = 0, flashT = 0;
+  const mkP = i => ({ i, pts: [], valid: false, seen: 0, miss: 0, cx: SW / 2, cy: SH * 0.45, sww: SH * 0.2, nose: null, score: 0, combo: 0, maxCombo: 0, hits: 0, bones: [], trail: [] });
+  let PL = [mkP(0)];
+  const NP = () => versus ? 2 : 1;
+  const PTXT = ['#ffb35a', '#6fc8ff'], PHEX = [0xffb35a, 0x6fc8ff];
+  const DIFF = [{ dur: 3.8, iv: 1.3, size: 1.2, minDur: 2.2 }, { dur: 3.1, iv: 1.05, size: 1.0, minDur: 1.8 }, { dur: 2.6, iv: 0.85, size: 0.88, minDur: 1.5 }];
+  const HR = () => SH * 0.05;     // radius sentuh dasar (px)
+
+  // ---------- target ----------
+  function pickTarget(pref) {
+    const m = { l: 70, r: SW - 70, t: SH * 0.2, b: SH - 80 }, p = useCam ? PL[Math.min(pref, NP() - 1)] : null;
+    for (let k = 0; k < 14; k++) {
+      let x, y;
+      if (p && p.valid) { const th = rr(-3.5, 0.35), R = p.sww * rr(1.15, 2.5); x = p.cx + Math.cos(th) * R; y = p.cy + Math.sin(th) * R * 0.9; }
+      else if (!useCam && versus) { x = (pref === 0 ? rr(0.06, 0.46) : rr(0.54, 0.94)) * SW; y = rr(m.t, m.b); }
+      else { x = rr(m.l, m.r); y = rr(m.t, m.b); }
+      if (x < m.l || x > m.r || y < m.t || y > m.b) continue;
+      if (p && p.nose && Math.hypot(x - p.nose.x, y - p.nose.y) < p.sww * 0.9) continue;
+      if (bubbles.some(b => Math.hypot(b.ex - x, b.ey - y) < SH * 0.14 && b.t > 0.35)) continue;
+      return { x, y };
+    }
+    return { x: rr(m.l, m.r), y: rr(m.t, m.b) };
+  }
+  function spawnBubble() {
+    const d = DIFF[settings.diff], dur0 = Math.max(d.minDur, d.dur - tPlay * 0.012);
+    const score = Math.max(...PL.map(p => p.score)), r = Math.random();
+    let type = 'normal';
+    if (r < 0.1 && tPlay > 8) type = 'bomb'; else if (r < 0.2 && tPlay > 15) type = 'big'; else if (r < 0.29 && tPlay > 6) type = 'gold'; else if (r < 0.33 && !versus && lives < 5) type = 'heart';
+    const hex = type === 'gold' ? 0xffd23f : type === 'heart' ? 0xff7ac0 : type === 'bomb' ? 0x2a2a38 : type === 'big' ? 0x6aa8ff : PALETTE[(Math.random() * PALETTE.length) | 0];
+    const dur = dur0 * (type === 'gold' ? 0.75 : type === 'big' ? 1.1 : 1), size = d.size * settings.size * (type === 'big' ? 1.35 : type === 'gold' ? 0.82 : 1);
+    const tg = pickTarget(nextPref); nextPref = (nextPref + 1) % NP();
+    const e = pxToWorld(tg.x, tg.y), s = { x: rr(-0.6, 0.6), y: rr(-0.4, 0.5) };
+    const g = new THREE.Group();
+    const body = new THREE.Mesh(bubGeo, bubMat(hex, type === 'bomb' ? 0.95 : 0.42)); g.add(body);
+    const core = new THREE.Mesh(bubGeo, getCore(hex)); core.scale.setScalar(0.5); g.add(core);
+    const edge = new THREE.Mesh(new THREE.RingGeometry(0.9, 1, 40), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6, depthWrite: false })); edge.position.z = 0.05; g.add(edge);
+    const hl = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffffff, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: type === 'bomb' ? 0.35 : 0.95 })); hl.scale.set(0.95, 0.65, 1); hl.position.set(-0.38, 0.42, 0.95); g.add(hl);
+    const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: type === 'bomb' ? 0xff2a2a : hex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: type === 'bomb' ? 0.7 : 0.55 })); glow.scale.set(3.2, 3.2, 1); glow.userData.glow = true; g.add(glow);
+    if (ICON[type]) { const ic = new THREE.Sprite(new THREE.SpriteMaterial({ map: ICON[type], transparent: true, depthTest: false })); ic.scale.set(1.25, 1.25, 1); ic.position.z = 0.9; g.add(ic); }
+    let ring = null; if (type === 'big') { ring = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0xaad0ff })); g.add(ring); }
+    scene.add(g);
+    bubbles.push({ type, hex, g, body, core, glow, ring, t: 0, dur, size, sx: s.x, sy: s.y, ex: e.x, ey: e.y, ex_px: tg.x, ey_px: tg.y, x: s.x, y: s.y, z: -40, hp: type === 'big' ? 2 : 1, cool: 0, dead: false, wob: Math.random() * 6 });
+  }
+  function disposeBubble(b) { scene.remove(b.g); b.g.traverse(o => { if (o.material && o.material.map === undefined) {} if (o.isSprite && o.material) o.material.dispose(); }); }
+  function clearBubbles() { bubbles.forEach(disposeBubble); bubbles = []; }
+  const bubbleScreen = b => { const c = worldToPx(b.x, b.y, b.z), e = worldToPx(b.x + b.size, b.y, b.z); return { x: c.x, y: c.y, r: Math.abs(e.x - c.x) }; };
+
+  // ======================= HUD =======================
+  const show = (id, on) => $(id).classList.toggle('hidden', !on);
+  let toastTimer = 0;
+  function toast(msg, ms = 3000) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), ms); }
+  function say(text, color) { const m = $('msg'); m.textContent = text; m.style.color = color || '#fff'; m.classList.remove('show'); void m.offsetWidth; m.classList.add('show'); }
+  function popText(txt, px, py, color) { const el = document.createElement('b'); el.textContent = txt; el.style.left = px + 'px'; el.style.top = py + 'px'; el.style.color = color || '#fff36a'; $('pops').appendChild(el); setTimeout(() => el.remove(), 950); }
+  function updateHud(pop) {
+    if (versus) { for (let i = 0; i < 2; i++) { $('vs' + (i + 1)).textContent = PL[i].score; $('vc' + (i + 1)).textContent = PL[i].combo >= 2 ? '🔥 x' + Math.min(5, PL[i].combo) : ''; } return; }
+    const p = PL[0]; $('score').textContent = p.score; $('hitHud').textContent = p.hits + ' target'; $('comboHud').textContent = p.combo >= 2 ? '🔥 COMBO x' + Math.min(5, p.combo) : ''; $('bestHud').textContent = 'TERBAIK ' + Math.max(best, p.score);
+    let h = ''; for (let i = 0; i < 5; i++) h += `<span class="${i >= lives ? 'lost' : ''}">❤</span>`; $('lives').innerHTML = h;
+    if (pop) { const s = $('score'); s.classList.add('pop'); setTimeout(() => s.classList.remove('pop'), 110); }
+  }
+  const fmtT = t => { const s = Math.max(0, Math.ceil(t)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+  function updateFever() { $('feverFill').style.width = Math.round((fever.t > 0 ? fever.t / 8 : fever.c) * 100) + '%'; $('fever').classList.toggle('on', fever.t > 0); $('feverTxt').textContent = fever.t > 0 ? '🔥 HUJAN BOLA x2 🔥' : 'ISI UNTUK HUJAN BOLA'; }
+
+  // ---------- skor ----------
+  function popBubble(b, owner) {
+    const p = PL[owner], sc = bubbleScreen(b), colHex = b.hex, pc = versus ? PTXT[owner] : '#fff36a';
+    b.dead = true; disposeBubble(b);
+    const hex = '#' + colHex.toString(16).padStart(6, '0');
+    if (b.type === 'bomb') {
+      sfx.bomb(); burst(b.x, b.y, b.z, 40, ['#ff5a1f', '#ffcc33', '#555555'], 8); ringFx(b.x, b.y, b.z + 0.5, b.size * 2.5, 0xff6a2a); p.combo = 0;
+      if (versus) { p.score = Math.max(0, p.score - 30); popText('💥 −30', sc.x, sc.y, '#ff6a4a'); } else { lives--; flashT = 1; popText('💥 BOM!', sc.x, sc.y, '#ff6a4a'); $('flash').classList.remove('on'); void $('flash').offsetWidth; $('flash').classList.add('on'); try { navigator.vibrate && navigator.vibrate([80, 40, 160]); } catch (e) {} if (lives <= 0) endGame(); }
+      updateHud(); return;
+    }
+    if (b.type === 'heart') { lives = Math.min(5, lives + 1); sfx.heart(); burst(b.x, b.y, b.z, 18, ['#ff7ac0', '#ffd1e6', '#ffffff'], 5); ringFx(b.x, b.y, b.z + 0.5, b.size * 2.2, 0xff7ac0); popText('+1 ❤', sc.x, sc.y, '#ff8ac8'); updateHud(true); return; }
+    p.combo++; p.maxCombo = Math.max(p.maxCombo, p.combo); p.hits++; hitsTot++;
+    const mult = Math.min(5, Math.max(1, p.combo)) * (fever.t > 0 ? 2 : 1), base = b.type === 'gold' ? 50 : b.type === 'big' ? 30 : 10, pts = base * mult; p.score += pts;
+    (b.type === 'gold' ? sfx.gold : b.type === 'big' ? sfx.big : () => sfx.pop(p.combo))(); burst(b.x, b.y, b.z, b.type === 'gold' ? 30 : 18, [hex, '#ffffff', hex], 6); ringFx(b.x, b.y, b.z + 0.5, b.size * 2.2, versus ? PHEX[owner] : colHex);
+    popText('+' + pts, sc.x, sc.y - 10, pc);
+    if (!fever.t) { fever.c = Math.min(1, fever.c + 0.055); if (fever.c >= 1) { fever.t = 8; fever.c = 0; say('🔥 HUJAN BOLA!', '#ffe36a'); sfx.fever(); } }
+    updateHud(true); updateFever();
+  }
+  function hitBubble(b, owner) {
+    if (b.cool > 0) return; const sc = bubbleScreen(b);
+    if (b.hp > 1) { b.hp--; b.cool = 0.4; sfx.hit2(); burst(b.x, b.y, b.z, 10, ['#aad0ff', '#ffffff'], 4); ringFx(b.x, b.y, b.z + 0.5, b.size * 1.8, 0xaad0ff); popText('💥', sc.x, sc.y, '#aad0ff'); if (b.ring) b.ring.visible = false; return; }
+    popBubble(b, owner);
+  }
+  function missBubble(b) {
+    b.dead = true; disposeBubble(b); if (b.type === 'bomb' || b.type === 'heart' || b.type === 'gold') return;
+    missTot++; const sc = bubbleScreen(b); PL.forEach(p => { p.combo = 0; });
+    if (!versus) { lives--; sfx.miss(); popText('LEWAT', clamp(sc.x, 40, SW - 40), clamp(sc.y, 40, SH - 40), '#ff8a8a'); $('flash').classList.remove('on'); void $('flash').offsetWidth; $('flash').classList.add('on'); updateHud(); if (lives <= 0) endGame(); } else updateHud();
+  }
+
+  // ======================= INPUT: POINTER (tanpa kamera) =======================
+  const ptrs = new Map();
+  function ptrPoints() {
+    const byOwner = PL.map(() => []);
+    ptrs.forEach(p => { const o = versus ? (p.x < SW / 2 ? 0 : 1) : 0; byOwner[o].push({ x: p.x, y: p.y, r: HR() * 1.15, kind: 'hand' }); });
+    PL.forEach((pl, i) => { pl.pts = byOwner[i]; pl.valid = true; pl.bones = []; pl.nose = null; });
+  }
+  addEventListener('pointerdown', e => { if (e.target.closest && e.target.closest('button,a,.overlay,details')) return; initAudio(); ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY, mouse: e.pointerType === 'mouse' }); });
+  addEventListener('pointermove', e => { const p = ptrs.get(e.pointerId); if (p) { p.x = e.clientX; p.y = e.clientY; } else if (e.pointerType === 'mouse') ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY, mouse: true }); });
+  const endPtr = e => { const p = ptrs.get(e.pointerId); if (p && !p.mouse) ptrs.delete(e.pointerId); };
+  addEventListener('pointerup', endPtr); addEventListener('pointercancel', endPtr);
+
+  // ======================= INPUT: KAMERA (POSE 1-2 ORANG) =======================
+  const MP = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
+  const POSE_MODEL = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
+  const cam = { on: false, stream: null, lm: null, loading: null, lastVT: -1, lastTs: 0, lastCx: [null, null] };
+  const video = $('bgVideo'), fx = $('fx'), fctx = fx.getContext('2d');
+  function loadPose() {
+    if (cam.lm) return Promise.resolve(cam.lm); if (cam.loading) return cam.loading;
+    cam.loading = (async () => {
+      const vision = await import(`${MP}/vision_bundle.mjs`), files = await vision.FilesetResolver.forVisionTasks(`${MP}/wasm`);
+      const opts = d => ({ baseOptions: { modelAssetPath: POSE_MODEL, delegate: d }, runningMode: 'VIDEO', numPoses: 2, minPoseDetectionConfidence: 0.5, minPosePresenceConfidence: 0.5, minTrackingConfidence: 0.5 });
+      try { cam.lm = await vision.PoseLandmarker.createFromOptions(files, opts('GPU')); } catch (e) { cam.lm = await vision.PoseLandmarker.createFromOptions(files, opts('CPU')); }
+      return cam.lm;
+    })();
+    cam.loading.catch(() => { cam.loading = null; }); return cam.loading;
+  }
+  const menuMsg = m => { const e = $('menuMsg'); e.textContent = m || ''; e.classList.toggle('hidden', !m); };
+  async function enableCamera() {
+    menuMsg('');
+    if (window.isSecureContext === false || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { menuMsg('Kamera hanya bisa dipakai lewat HTTPS (atau localhost) di browser yang mendukung. Pakai mode Mouse/Sentuhan dulu.'); return false; }
+    toast('Menyiapkan kamera & pendeteksi tubuh…', 9000);
+    try { if (!cam.stream) cam.stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30 } } }); video.srcObject = cam.stream; await video.play().catch(() => {}); }
+    catch (e) { stopCamera(); $('toast').classList.remove('show'); const n = e && e.name; menuMsg(n === 'NotAllowedError' || n === 'SecurityError' ? 'Izin kamera ditolak. Izinkan kamera untuk situs ini di pengaturan browser, lalu coba lagi.' : n === 'NotFoundError' ? 'Tidak ada kamera yang ditemukan di perangkat ini.' : 'Kamera tidak bisa dibuka (mungkin sedang dipakai aplikasi lain).'); return false; }
+    try { await loadPose(); } catch (e) { stopCamera(); $('toast').classList.remove('show'); menuMsg('Pendeteksi tubuh gagal diunduh. Pastikan internet tersambung dan cdn.jsdelivr.net / storage.googleapis.com tidak diblokir.'); return false; }
+    try { await cam.lm.setOptions({ numPoses: versus ? 2 : 1 }); } catch (e) {}
+    $('toast').classList.remove('show'); show('bgVideo', true); show('bgGrad', false); return true;
+  }
+  function stopCamera() { cam.on = false; if (cam.stream) { for (const t of cam.stream.getTracks()) t.stop(); cam.stream = null; } video.srcObject = null; show('bgVideo', false); show('bgGrad', true); }
+  // koordinat gambar kamera (dicerminkan, object-fit: cover) -> piksel layar
+  function imgToScreen(nx, ny) { const vw = video.videoWidth || 640, vh = video.videoHeight || 480, sc = Math.max(SW / vw, SH / vh), dw = vw * sc, dh = vh * sc; return { x: (SW - dw) / 2 + (1 - nx) * dw, y: (SH - dh) / 2 + ny * dh }; }
+  function personFromLandmarks(h) {
+    const P = i => { const q = imgToScreen(h[i].x, h[i].y); q.v = h[i].visibility == null ? 1 : h[i].visibility; return q; }, ok = (q, v = 0.3) => q.v > v;
+    const L = {}; for (const i of [0, 11, 12, 13, 14, 15, 16, 19, 20, 23, 24, 25, 26, 27, 28]) L[i] = P(i);
+    if (!ok(L[11], 0.4) || !ok(L[12], 0.4)) return null;
+    const sww = Math.hypot(L[11].x - L[12].x, L[11].y - L[12].y); if (sww < SH * 0.04) return null;
+    const hr = HR() * settings.size, pts = [], add = (q, r, kind) => pts.push({ x: q.x, y: q.y, r, kind }), mid = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+    if (ok(L[0])) add(L[0], hr * 1.2, 'head');
+    for (const s of [[13, 15, 19], [14, 16, 20]]) { const e = L[s[0]], w = L[s[1]], ix = L[s[2]];
+      if (ok(e)) add(e, hr * 0.95, 'elbow'); if (ok(w)) { add(w, hr, 'hand'); if (ok(e)) add(mid(e, w), hr * 0.8, 'arm'); }
+      if (ok(ix) && ok(w)) { add(ix, hr, 'hand'); add({ x: w.x + (ix.x - w.x) * 1.9, y: w.y + (ix.y - w.y) * 1.9 }, hr, 'hand'); } }
+    for (const i of [25, 26, 27, 28]) if (ok(L[i], 0.55)) add(L[i], hr * 1.15, 'foot');
+    const bones = [[11, 12], [11, 13], [13, 15], [15, 19], [12, 14], [14, 16], [16, 20], [11, 23], [12, 24], [23, 24], [23, 25], [24, 26], [25, 27], [26, 28]].filter(([a, b]) => L[a] && L[b] && ok(L[a]) && ok(L[b])).map(([a, b]) => [L[a], L[b]]);
+    return { pts, bones, cx: (L[11].x + L[12].x) / 2, cy: (L[11].y + L[12].y) / 2, sww, nose: ok(L[0]) ? L[0] : null };
+  }
+  function detectPose(now) {
+    if (!cam.on || !cam.lm || video.readyState < 2 || video.currentTime === cam.lastVT) return;
+    cam.lastVT = video.currentTime; cam.lastTs = Math.max(cam.lastTs + 1, now);
+    let res; try { res = cam.lm.detectForVideo(video, cam.lastTs); } catch (e) { return; }
+    const items = ((res && res.landmarks) || []).map(h => ({ h, p: personFromLandmarks(h) })).filter(o => o.p);
+    let asg = [null, null];
+    if (!versus) asg[0] = items.sort((a, b) => b.p.sww - a.p.sww)[0] || null;
+    else if (items.length >= 2) { items.sort((a, b) => a.p.cx - b.p.cx); asg = [items[0], items[items.length - 1]]; }
+    else if (items.length === 1) { const q = items[0], d = k => cam.lastCx[k] == null ? Infinity : Math.abs(q.p.cx - cam.lastCx[k]); const i = (d(0) === Infinity && d(1) === Infinity) ? (q.p.cx < SW / 2 ? 0 : 1) : (d(0) <= d(1) ? 0 : 1); asg[i] = q; }
+    for (let i = 0; i < NP(); i++) {
+      const pl = PL[i], a = asg[i];
+      if (a) { cam.lastCx[i] = a.p.cx; const k = 0.6; pl.cx = pl.valid ? lerp(pl.cx, a.p.cx, k) : a.p.cx; pl.cy = pl.valid ? lerp(pl.cy, a.p.cy, k) : a.p.cy; pl.sww = pl.valid ? lerp(pl.sww, a.p.sww, k) : a.p.sww; pl.pts = a.p.pts; pl.bones = a.p.bones; pl.nose = a.p.nose; pl.valid = true; pl.seen = elapsed; pl.miss = 0; }
+      else if (++pl.miss > 8) { pl.valid = false; pl.pts = []; pl.bones = []; pl.nose = null; }
+    }
+  }
+
+  // ======================= PENGATURAN =======================
+  const csInputs = [];
+  function buildSettings(box) {
+    const defs = [{ k: 'size', label: 'Ukuran target', min: 0.7, max: 1.5, step: 0.05, fmt: v => Math.round(v * 100) + '%', tip: 'Besar = target dan area sentuh lebih besar (lebih mudah)' }, { k: 'dim', label: 'Redup latar kamera', min: 0, max: 0.8, step: 0.05, fmt: v => Math.round(v * 100) + '%', tip: 'Naikkan kalau bola sulit terlihat di latar yang terang' }];
+    for (const c of defs) { const d = document.createElement('div'); d.className = 'cs'; d.innerHTML = `<div class="row"><label>${c.label}</label><input type="range" min="${c.min}" max="${c.max}" step="${c.step}"><span class="val"></span></div><small>${c.tip}</small>`;
+      const inp = d.querySelector('input'), val = d.querySelector('.val'); inp.value = settings[c.k]; val.textContent = c.fmt(settings[c.k]); inp.oninput = () => { settings[c.k] = +inp.value; saveSettings(); sync(); applyDim(); }; csInputs.push({ c, inp, val }); box.appendChild(d); }
+    const b = document.createElement('button'); b.className = 'btn ghost tiny'; b.textContent = '↺ Kembalikan standar'; b.onclick = () => { Object.assign(settings, SET_DEF); saveSettings(); sync(); applyDim(); }; box.appendChild(b);
+  }
+  function sync() { for (const x of csInputs) { x.inp.value = settings[x.c.k]; x.val.textContent = x.c.fmt(settings[x.c.k]); } }
+  const applyDim = () => { $('dim').style.opacity = settings.dim; };
+  buildSettings($('csMenu')); buildSettings($('csPause')); applyDim();
+  $('diffBox').querySelectorAll('button').forEach(b => { b.classList.toggle('on', +b.dataset.d === settings.diff); b.onclick = () => { settings.diff = +b.dataset.d; saveSettings(); $('diffBox').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); }; });
+  function setVersus(v) { versus = v; $('btnM1').classList.toggle('on', !v); $('btnM2').classList.toggle('on', v); show('vsHelp', v); PL = (v ? [0, 1] : [0]).map(mkP); }
+  $('btnM1').onclick = () => setVersus(false); $('btnM2').onclick = () => setVersus(true);
+
+  // ======================= ALUR GAME =======================
+  function resetRun() {
+    clearBubbles(); PL = (versus ? [0, 1] : [0]).map(mkP); spawnT = 0.6; tPlay = 0; hitsTot = 0; missTot = 0; lives = 5; timeLeft = 90; fever = { c: 0, t: 0 }; nextPref = 0;
+    PART.forEach(p => { p.life = 0; p.m.visible = false; }); RINGS.forEach(r => { r.life = 0; r.m.visible = false; }); updateHud(); updateFever();
+  }
+  function startCountdown() {
+    state = 'count'; show('waitBox', false); let n = 3; const c = $('count'); show('count', true);
+    const set = () => { c.textContent = n > 0 ? n : 'PUKUL!'; c.classList.remove('go'); void c.offsetWidth; c.classList.add('go'); sfx.tick(); }; set();
+    const iv = setInterval(() => { if (state !== 'count') { clearInterval(iv); show('count', false); return; } n--; if (n < 0) { clearInterval(iv); show('count', false); state = 'play'; return; } set(); }, 800);
+  }
+  async function startGame(withCam) {
+    initAudio();
+    if (withCam) { const ok = await enableCamera(); if (!ok) return; } else stopCamera();
+    useCam = withCam; cam.on = withCam; cam.lastCx = [null, null]; ptrs.forEach((p, id) => { if (!p.mouse) ptrs.delete(id); });
+    resetRun(); show('menu', false); show('over', false); show('paused', false); show('hud', !versus); show('hudVs', versus); show('fever', !versus || true); show('gameBtns', true);
+    if (withCam) { state = 'wait'; waitT = 0; show('waitBox', true); $('waitT').textContent = 'SIAP-SIAP'; $('waitS').textContent = versus ? 'Berdirilah berdampingan di depan kamera (P1 kiri, P2 kanan) sampai kerangka kalian muncul…' : 'Berdiri ±2 meter dari kamera sampai kerangkamu muncul di layar…'; toast('Gerakkan tangan untuk memukul bola. Hindari 💣!', 4000); }
+    else { startCountdown(); toast(versus ? 'P1: sisi kiri layar · P2: sisi kanan. Gerakkan mouse / sentuh untuk memukul!' : 'Gerakkan mouse (atau sentuh layar) untuk memukul bola. Hindari 💣!', 4000); }
+  }
+  function endGame() { if (state === 'dying' || state === 'over') return; state = 'dying'; dieT = 0.9; }
+  function gameOver() {
+    state = 'over'; stopCamera(); sfx.over(); clearBubbles();
+    if (versus) { const a = PL[0].score, b = PL[1].score; $('overTitle').textContent = a === b ? 'SERI!' : `🏆 P${a > b ? 1 : 2} MENANG!`; $('overScore').textContent = `${a} : ${b}`; $('overInfo').textContent = `Target kena P1 ${PL[0].hits} / P2 ${PL[1].hits} · combo terbaik ${PL[0].maxCombo} / ${PL[1].maxCombo}`; }
+    else { const p = PL[0], nb = p.score > best; if (nb) { best = p.score; store.set('best', best); } const tot = hitsTot + missTot; $('overTitle').textContent = nb && p.score > 0 ? 'REKOR BARU!' : 'GAME OVER'; $('overScore').textContent = p.score; $('overInfo').textContent = `${p.hits} target kena · akurasi ${tot ? Math.round(hitsTot / tot * 100) : 0}% · combo terbaik ${p.maxCombo} · terbaik ${best}`; }
+    ['hud', 'hudVs', 'fever', 'gameBtns', 'waitBox'].forEach(i => show(i, false)); show('over', true);
+  }
+  function toMenu() { stopCamera(); state = 'menu'; clearBubbles(); ['paused', 'over', 'hud', 'hudVs', 'fever', 'gameBtns', 'count', 'waitBox'].forEach(i => show(i, false)); show('menu', true); }
+  function pauseGame() { if (state !== 'play') return; state = 'paused'; show('paused', true); }
+  function resumeGame() { if (state !== 'paused') return; show('paused', false); state = 'play'; }
+  $('btnCam').onclick = () => startGame(true); $('btnPtr').onclick = () => startGame(false); $('btnAgainCam').onclick = () => startGame(true); $('btnAgainPtr').onclick = () => startGame(false);
+  $('btnHome').onclick = toMenu; $('btnQuit').onclick = toMenu; $('btnPause').onclick = pauseGame; $('btnResume').onclick = resumeGame;
+  const muteLabel = () => { $('btnMute').textContent = settings.mute ? '🔇' : '🔊'; };
+  $('btnMute').onclick = () => { settings.mute = !settings.mute; if (master) master.gain.value = settings.mute ? 0 : 0.55; saveSettings(); muteLabel(); }; muteLabel();
+  addEventListener('keydown', e => { if (e.key === 'p' || e.key === 'Escape') { if (state === 'play') pauseGame(); else if (state === 'paused') resumeGame(); } });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(); });
+
+  // ======================= UPDATE =======================
+  function update(dt) {
+    elapsed += dt;
+    if (state === 'wait') {
+      const ok = PL.every((p, i) => i >= NP() || p.valid); waitT = ok ? waitT + dt : 0;
+      $('waitS').textContent = ok ? 'Terdeteksi! Tahan sebentar…' : (versus ? `Pemain terdeteksi: ${PL.filter(p => p.valid).length}/2 — berdirilah berdampingan, badan atas terlihat.` : 'Tubuhmu belum terdeteksi. Mundur sedikit sampai kepala, bahu, dan lengan terlihat.');
+      if (waitT > 0.9) startCountdown(); return;
+    }
+    if (state !== 'play' && state !== 'dying') return;
+    if (state === 'play') {
+      tPlay += dt; const d = DIFF[settings.diff];
+      if (versus) { timeLeft -= dt; $('timer').textContent = fmtT(timeLeft); $('timer').classList.toggle('low', timeLeft <= 10); if (timeLeft <= 0) endGame(); }
+      if (fever.t > 0) { fever.t -= dt; if (fever.t <= 0) { fever.t = 0; say('Selesai!', '#cfd8ff'); } updateFever(); }
+      spawnT -= dt; if (spawnT <= 0) { spawnBubble(); spawnT = Math.max(0.3, d.iv - tPlay * 0.008) * (fever.t > 0 ? 0.45 : 1) * rr(0.8, 1.2) * (versus ? 0.75 : 1); }
+    } else { dieT -= dt; if (dieT <= 0) gameOver(); }
+    // gerak target + tabrakan
+    for (const b of bubbles) {
+      if (b.dead) continue;
+      b.t += dt / b.dur; b.cool = Math.max(0, b.cool - dt); b.z = -40 + b.t * 42; const f = Math.min(1, (b.z + 40) / 40);
+      b.x = lerp(b.sx, b.ex, f) + Math.sin(elapsed * 3 + b.wob) * 0.15 * (1 - f); b.y = lerp(b.sy, b.ey, f) + Math.cos(elapsed * 2.4 + b.wob) * 0.12 * (1 - f);
+      b.g.position.set(b.x, b.y, b.z); const pul = 1 + 0.05 * Math.sin(elapsed * 6 + b.wob); b.g.scale.setScalar(b.size * pul); b.body.rotation.y += dt;
+      b.g.children.forEach(c => { if (c.isSprite && c.userData.glow) c.material.opacity = (b.type === 'bomb' ? 0.55 + 0.3 * Math.sin(elapsed * 14) : 0.55) * Math.min(1, (b.z + 38) / 14); });
+      if (b.ring) b.ring.rotation.z += dt * 2;
+      if (state === 'play' && b.z >= -9 && b.z <= 2) {
+        const sc = bubbleScreen(b); let best = null, bd = Infinity;
+        for (const p of PL) for (const q of p.pts) { const d = Math.hypot(q.x - sc.x, q.y - sc.y) - (sc.r + q.r * 0.6); if (d < 0 && d < bd) { bd = d; best = p.i; } }
+        if (best != null) hitBubble(b, best);
+      }
+      if (!b.dead && b.t >= 1) missBubble(b);
+    }
+    bubbles = bubbles.filter(b => !b.dead);
+    for (const q of PART) { if (q.life <= 0) continue; q.life -= dt; if (q.life <= 0) { q.m.visible = false; continue; } q.vy -= 5 * dt; q.m.position.x += q.vx * dt; q.m.position.y += q.vy * dt; q.m.position.z += q.vz * dt; q.m.material.opacity = Math.min(1, q.life / q.max * 1.8); }
+    for (const r of RINGS) { if (r.life <= 0) continue; r.life -= dt; if (r.life <= 0) { r.m.visible = false; continue; } const k = 1 - r.life / r.max; r.m.scale.setScalar(r.r * (0.4 + k * 1.2)); r.m.material.opacity = 1 - k; }
+  }
+
+  // ======================= RENDER =======================
+  function drawFx(dt) {
+    fctx.clearRect(0, 0, SW, SH);
+    PL.forEach((pl, i) => {
+      if (!pl.valid) return; const col = versus ? PTXT[i] : '#7fffd0';
+      fctx.lineCap = 'round'; fctx.shadowColor = col; fctx.shadowBlur = 12; fctx.strokeStyle = col; fctx.lineWidth = Math.max(3, SH * 0.008); fctx.globalAlpha = 0.85;
+      for (const [a, b] of pl.bones) { fctx.beginPath(); fctx.moveTo(a.x, a.y); fctx.lineTo(b.x, b.y); fctx.stroke(); }
+      fctx.globalAlpha = 1;
+      for (const q of pl.pts) { const big = q.kind === 'hand'; fctx.shadowBlur = big ? 18 : 8; fctx.fillStyle = big ? '#ffffff' : col; fctx.globalAlpha = big ? 0.9 : 0.6; fctx.beginPath(); fctx.arc(q.x, q.y, big ? q.r * 0.55 : q.r * 0.35, 0, 6.283); fctx.fill(); if (big) { fctx.globalAlpha = 0.5; fctx.strokeStyle = col; fctx.lineWidth = 3; fctx.beginPath(); fctx.arc(q.x, q.y, q.r * 0.8, 0, 6.283); fctx.stroke(); } }
+      fctx.globalAlpha = 1; fctx.shadowBlur = 0;
+    });
+  }
+  function resize() { SW = innerWidth; SH = innerHeight; renderer.setSize(SW, SH, false); camera.aspect = SW / SH; camera.updateProjectionMatrix(); const dpr = Math.min(devicePixelRatio || 1, 2); fx.width = SW * dpr; fx.height = SH * dpr; fctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
+  addEventListener('resize', resize);
+
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
+    detectPose(now); if (!useCam) ptrPoints();
+    update(dt); drawFx(dt); renderer.render(scene, camera); requestAnimationFrame(frame);
+  }
+  resize(); $('bestHud').textContent = 'TERBAIK ' + best; requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

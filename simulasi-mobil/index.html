@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0b1020">
+<title>Simulasi Mobil Sensor Stir</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bangers&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="../shared/menu.css">
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="dim"></div>
+<div id="vign"></div>
+<div id="camBox" class="hidden"><video id="bgVideo" playsinline muted autoplay></video><canvas id="skel" width="240" height="180"></canvas><div class="camlab" id="camLab"></div></div>
+<div class="hud hidden" id="hud">
+  <div class="tl"><div class="score" id="score">0</div><div class="sub" id="distHud">0 m</div><div class="lives" id="lives"></div></div>
+  <div class="tr"><div class="timer hidden" id="timerHud">3:00</div><div class="sub" id="bestHud"></div></div>
+</div>
+<div class="dash hidden" id="dash">
+  <div class="speedo"><b id="kmh">0</b><span>km/j</span></div>
+  <div class="wheelBox"><div class="wheel" id="wheel"><svg viewBox="0 0 100 100" width="100%" height="100%"><circle cx="50" cy="50" r="42" fill="none" stroke="#1c1f2a" stroke-width="9"/><circle cx="50" cy="50" r="42" fill="none" stroke="#3a4054" stroke-width="3"/><path d="M50 50 L12 58 M50 50 L88 58 M50 50 L50 88" stroke="#1c1f2a" stroke-width="8" stroke-linecap="round"/><circle cx="50" cy="50" r="11" fill="#2a2f40" stroke="#ffd23f" stroke-width="2"/><rect x="45" y="6" width="10" height="9" rx="2" fill="#ff3b30"/></svg></div></div>
+  <div class="pedals"><div class="pbar"><i id="gasFill"></i><i id="brkFill"></i></div><span>GAS / REM</span></div>
+</div>
+<div class="tbtns hidden" id="touchBtns"><button id="tbL">◀</button><button id="tbR">▶</button><div class="sp"></div><button id="tbB">🛑</button><button id="tbG">⛽</button></div>
+<div class="rhud hidden" id="rhud">
+  <div class="rtop"><div class="rtime" id="raceTime">0:00.0</div><div class="rbar" id="rbar"><b>🏁</b></div></div>
+  <div class="rp" id="rp0"><div class="rwh" id="rwh0"></div><div class="rinfo"><div class="rpos"><b id="rpos0">1</b>/<span id="rn0">4</span></div><div class="rspd"><b id="rspd0">0</b> km/j</div><div class="rflag" id="rflag0"></div></div><div class="rpd"><i id="rg0"></i><i id="rb0"></i></div></div>
+  <div class="rp hidden" id="rp1"><div class="rwh" id="rwh1"></div><div class="rinfo"><div class="rpos"><b id="rpos1">1</b>/<span id="rn1">4</span></div><div class="rspd"><b id="rspd1">0</b> km/j</div><div class="rflag" id="rflag1"></div></div><div class="rpd"><i id="rg1"></i><i id="rb1"></i></div></div>
+</div>
+<div id="splitLine" class="hidden"></div>
+<div class="msg" id="msg"></div>
+<div class="count hidden" id="count"></div>
+<div id="calibBox" class="hidden"><div class="t">KALIBRASI</div><div class="s" id="calS"></div><div class="b2"><i id="calBar"></i></div><div class="s hidden" id="calS2" style="margin-top:10px"></div><div class="b2 hidden" id="calBox2"><i id="calBar2"></i></div></div>
+<div class="btns hidden" id="gameBtns"><button class="btn-sm hidden" id="btnCal">🎯 Kalibrasi</button><button class="btn-sm" id="btnView">📷</button><button class="btn-sm" id="btnHorn">📯</button><button class="btn-sm" id="btnMute">🔊</button><button class="btn-sm" id="btnPause">⏸</button></div>
+
+<div class="overlay" id="menu">
+  <h1>SIMULASI MOBIL<small>SENSOR STIR</small></h1>
+  <p>Pegang <b>setir imajiner</b> di depan kamera. <b>Putar kedua tangan</b> untuk membelok, <b>angkat tangan</b> untuk menambah gas, <b>turunkan</b> untuk mengerem.</p>
+  <div class="tips"><div class="tip"><b>🛞</b>Putar tangan<br>= belok</div><div class="tip"><b>⬆️</b>Tangan naik<br>= gas</div><div class="tip"><b>⬇️</b>Tangan turun<br>= rem</div><div class="tip"><b>🚗</b>Salip mobil,<br>hindari tabrakan</div></div>
+  <div class="modes" id="typeBox"><button class="btn mode" data-g="drive">🚗 Menyetir Bebas</button><button class="btn mode" data-g="race">🏁 Balapan</button></div>
+  <div id="raceBox" class="hidden"><div class="modes" id="plBox"></div><div class="modes" id="lenBox"></div><div class="modes" id="diffBox"></div><div class="hint" id="raceHelp"></div></div>
+  <div class="modes" id="modeBox"><button class="btn mode" data-m="0">❤️ Klasik (3 nyawa)</button><button class="btn mode" data-m="1">😌 Santai (3 menit, tanpa nyawa)</button><button class="btn mode" data-m="2">🌄 Jalan Santai (bebas, tanpa batas)</button></div>
+  <div class="hint" id="modeHelp"></div>
+  <div class="modes" id="mapBox"></div><div class="hint" id="mapHelp"></div>
+  <div class="modes" id="envBox"></div>
+  <div class="modes" id="weatherBox"></div><div class="hint" id="wxHelp"></div>
+  <div class="modes" id="viewBox"></div>
+  <div class="balls" id="carBox"></div>
+  <div class="lb hidden" id="lbMenu"><div class="lbt" id="lbMenuT">🏆 PERINGKAT</div><ol id="lbMenuList"></ol></div>
+  <button class="btn" id="btnCam">📷 Main Pakai Kamera (Setir Tangan)</button>
+  <button class="btn alt" id="btnKey">⌨️ Main Keyboard / Sentuh</button>
+  <button class="btn tilt" id="btnTilt">📱 Sensor Miring HP (setir ponsel)</button>
+  <details class="camset"><summary>⚙️ Pengaturan</summary><div id="csMenu"></div></details>
+  <div class="hint">Berdirilah ±2 meter dari kamera sampai <b>kepala, bahu, dan kedua tangan</b> terlihat. Pegang setir setinggi dada, <b>tahan 1 detik</b> untuk kalibrasi. Keyboard: ←/→ atau A/D belok, ↑/W gas, ↓/S rem, H klakson, C ganti sudut pandang. Tanpa gas, mobil melaju santai sendiri (cruise). <b>Tikungan:</b> mobil tertarik keluar, lawan dengan setir — panah ▶▶ / ◀◀ di layar menandakan tikungan kanan / kiri yang akan datang. Hujan & kabut membuat jalan lebih licin.</div>
+  <div class="warn hidden" id="menuMsg"></div>
+  <a class="btn ghost" href="../index.html">🎮 Daftar Game</a>
+</div>
+<div class="overlay hidden" id="over">
+  <h2 id="overTitle">SELESAI</h2><div class="big2" id="overScore">0</div><p id="overInfo"></p><div id="overTable"></div>
+  <div class="lb hidden" id="lbBox"><div class="lbt" id="lbTitle">🏆 PERINGKAT</div><div class="lbn hidden" id="lbForm"><input id="lbName" maxlength="16" placeholder="Nama kamu (maks. 16)" autocomplete="off"><button class="btn-sm" id="lbSave" type="button">Kirim</button></div><div class="lbmsg" id="lbMsg"></div><ol id="lbList"></ol></div>
+  <button class="btn" id="btnAgainCam">📷 Main Lagi (Kamera)</button><button class="btn alt" id="btnAgainKey">⌨️ Lagi (Keyboard)</button><button class="btn ghost" id="btnHome">🏠 Menu</button><a class="btn ghost" href="../index.html">🎮 Daftar Game</a>
+</div>
+<div class="overlay hidden" id="paused"><h2>JEDA</h2><details class="camset"><summary>⚙️ Pengaturan</summary><div id="csPause"></div></details><button class="btn" id="btnResume">▶ Lanjut</button><button class="btn alt hidden" id="btnFinish">🏁 Selesai & lihat hasil</button><button class="btn ghost" id="btnQuit">🏠 Menu</button></div>
+<div class="overlay hidden" id="garage"><div class="ghead"><h2>🔧 GARASI</h2><div class="coinbar">🪙 <b class="coinN">0</b> koin</div></div><div class="modes" id="gTabs"></div><div class="gshop" id="gGrid"></div><div class="hint">Koin didapat dari skor di mode menyetir (±1 koin tiap 40 poin) dan dari peringkat balapan.</div><button class="btn ghost" id="btnGarageBack">⬅ Kembali</button></div>
+<div id="curveHud" class="hidden"></div><div id="lightning"></div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>if (typeof THREE === 'undefined') { var mm = document.getElementById('menuMsg'); mm.textContent = 'Gagal memuat Three.js (butuh internet). Periksa koneksi lalu muat ulang halaman.'; mm.classList.remove('hidden'); }</script>
+<script src="../shared/camguide.js"></script>
+<script src="../shared/leaderboard.js"></script>
+<script src="js/00-dasar.js"></script>
+<script src="js/00b-medan.js"></script>
+<script src="js/01-scene-jalan.js"></script>
+<script src="js/01b-cuaca.js"></script>
+<script src="js/02-model-mobil.js"></script>
+<script src="js/02b-mobil-halus.js"></script>
+<script src="js/02c-truk-bus-motor.js"></script>
+<script src="js/01c-alam-kota.js"></script>
+<script src="js/01d-bayangan.js"></script>
+<script src="js/01e-peta.js"></script>
+<script src="js/03-fisika-lalu-lintas.js"></script>
+<script src="js/03b-kejadian.js"></script>
+<script src="js/03c-kejadian-peta.js"></script>
+<script src="js/03d-efek-mobil.js"></script>
+<script src="js/04-audio.js"></script>
+<script src="js/04b-suara-kendaraan.js"></script>
+<script src="js/04c-suara-peta.js"></script>
+<script src="js/05-alur-game.js"></script>
+<script src="js/06-kontrol-keyboard-sensor.js"></script>
+<script src="js/07-kamera-setir.js"></script>
+<script src="js/08b-balapan.js"></script>
+<script src="js/08-menu-pengaturan.js"></script>
+<script src="js/08c-garasi.js"></script>
+<script src="js/08d-peringkat.js"></script>
+<script src="js/09-hud-render-loop.js"></script>
+<script src="../shared/menu.js"></script>
+<script>/* hitung "dimainkan" global (sekali per tab per game) */(function(){try{var s=location.pathname.split('/').filter(Boolean);if(s.length&&/\.html?$/i.test(s[s.length-1]))s.pop();var g=s.pop();if(!g)return;var k='played_'+g;if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1');fetch('../api/hit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:g+'/'}),keepalive:true}).catch(function(){})}catch(e){}})();</script>
+</body>
+</html>

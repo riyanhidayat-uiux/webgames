@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#06231f">
+<title>Pelatih Senam Sensor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bangers&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="../shared/menu.css">
+</head>
+<body>
+<div id="bgGrad"></div>
+<video id="bgVideo" class="hidden" playsinline muted autoplay></video>
+<div id="dim"></div>
+<canvas id="fx"></canvas>
+<div id="coachBox" class="hidden"><canvas id="coachC"></canvas><div class="lab">PELATIH</div><div class="say" id="coachSay"></div></div>
+<div class="pops" id="pops"></div>
+<div class="hud hidden" id="hud">
+  <div class="top"><div class="exname" id="exName">LOMPAT BINTANG</div><div class="exsub" id="exSub">LATIHAN 1 / 5</div><div class="tbar"><i id="tFill"></i></div><div class="tlabel" id="tLabel">45</div></div>
+  <div class="pc r p1" id="pc0"><div class="pn" id="pn0">KAMU</div><div class="big" id="rep0">0</div><div class="of" id="of0">/ 12</div><div class="sc" id="sc0">0 poin</div><div class="fb" id="fb0"></div></div>
+  <div class="pc l p2 hidden" id="pc1"><div class="pn">P2</div><div class="big" id="rep1">0</div><div class="of" id="of1">/ 12</div><div class="sc" id="sc1">0 poin</div><div class="fb" id="fb1"></div></div>
+</div>
+<div class="msg" id="msg"></div><div class="count hidden" id="count"></div>
+<div id="rest" class="hidden"><div class="t" id="restT">ISTIRAHAT</div><div class="n" id="restN"></div><div class="d" id="restD"></div></div>
+<div id="calibBox" class="hidden"><div class="t">KALIBRASI</div><div class="s" id="calS"></div><div class="b2"><i id="calBar"></i></div><div class="s" id="calS2" style="margin-top:10px"></div><div class="b2" id="calBox2"><i id="calBar2"></i></div></div>
+<div class="btns hidden" id="gameBtns"><button class="btn-sm hidden" id="btnCal">🎯 Kalibrasi</button><button class="btn-sm" id="btnSkip">⏭ Lewati</button><button class="btn-sm" id="btnMute">🔊</button><button class="btn-sm" id="btnPause">⏸</button></div>
+
+<div class="overlay" id="menu">
+  <h1>PELATIH SENAM<small>SENSOR TUBUH</small></h1>
+  <p>Ikuti gerakan pelatih! Kamera <b>menghitung repetisimu</b> dan menilai apakah geraknya sudah cukup dalam, tinggi, atau lebar.</p>
+  <div class="tips"><div class="tip"><b>⭐</b>Lompat<br>bintang</div><div class="tip"><b>🏋️</b>Squat</div><div class="tip"><b>🦵</b>Angkat<br>lutut</div><div class="tip"><b>🙌</b>Angkat<br>tangan</div><div class="tip"><b>↔️</b>Miring<br>samping</div></div>
+  <div class="modes"><button class="btn mode on" id="btnM1">👤 1 Player</button><button class="btn mode" id="btnM2">👥 2 Player (adu)</button></div>
+  <div class="hint hidden" id="vsHelp"><b>2 Player:</b> berdirilah berdampingan (jarak ±1 meter). Keduanya melakukan latihan yang sama dan <b>adu poin</b>. Penilaian per orang, P1 di kiri layar dan P2 di kanan.</div>
+  <div class="modes" id="progBox"><button class="btn mode" data-p="0">⚡ Singkat (±3 mnt)</button><button class="btn mode on" data-p="1">💪 Standar (±6 mnt)</button><button class="btn mode" data-p="2">🔥 Tantangan (±9 mnt)</button></div>
+  <button class="btn" id="btnCam">📷 Mulai Latihan (Kamera)</button>
+  <button class="btn alt" id="btnDemo">⌨️ Mode Demo (Spasi = 1 repetisi)</button>
+  <details class="camset"><summary>⚙️ Pengaturan</summary><div id="csMenu"></div></details>
+  <div class="hint">Berdirilah <b>±2,5–3 meter</b> dari kamera sampai <b>seluruh badan</b> (kepala sampai kaki) terlihat, di ruang yang cukup luas dan terang. Pakai pakaian yang kontras dengan latar. Lakukan pemanasan ringan dulu ya. Mode Demo hanya untuk mencoba alur game tanpa kamera.</div>
+  <div class="warn hidden" id="menuMsg"></div>
+  <a class="btn ghost" href="../index.html">🎮 Daftar Game</a>
+</div>
+<div class="overlay hidden" id="over">
+  <h2 id="overTitle">LATIHAN SELESAI!</h2><div class="big2" id="overGrade">A</div><p id="overInfo"></p><div id="overTable"></div>
+  <button class="btn" id="btnAgainCam">📷 Latihan Lagi (Kamera)</button><button class="btn alt" id="btnAgainDemo">⌨️ Lagi (Demo)</button><button class="btn ghost" id="btnHome">🏠 Menu</button><a class="btn ghost" href="../index.html">🎮 Daftar Game</a>
+</div>
+<div class="overlay hidden" id="paused"><h2>JEDA</h2><details class="camset"><summary>⚙️ Pengaturan</summary><div id="csPause"></div></details><button class="btn" id="btnResume">▶ Lanjut</button><button class="btn ghost" id="btnQuit">🏠 Menu</button></div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>if (typeof THREE === 'undefined') { var mm = document.getElementById('menuMsg'); mm.textContent = 'Gagal memuat Three.js (butuh internet). Periksa koneksi lalu muat ulang halaman.'; mm.classList.remove('hidden'); }</script>
+<script src="../shared/camguide.js"></script>
+<script src="js/00-dasar.js"></script>
+<script src="js/01-latihan.js"></script>
+<script src="js/02-pengukuran-dari-tubuh.js"></script>
+<script src="js/03-pelatih-3d.js"></script>
+<script src="js/04-hud.js"></script>
+<script src="js/05-kamera-pose-1.js"></script>
+<script src="js/06-penilaian.js"></script>
+<script src="js/07-alur-latihan.js"></script>
+<script src="js/08-menu-pengaturan.js"></script>
+<script src="js/09-gambar-overlay.js"></script>
+<script src="js/10-loop.js"></script>
+<script src="../shared/menu.js"></script>
+<script>/* hitung "dimainkan" global (sekali per tab per game) */(function(){try{var s=location.pathname.split('/').filter(Boolean);if(s.length&&/\.html?$/i.test(s[s.length-1]))s.pop();var g=s.pop();if(!g)return;var k='played_'+g;if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1');fetch('../api/hit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:g+'/'}),keepalive:true}).catch(function(){})}catch(e){}})();</script>
+<script src="js/99-preview.js"></script>
+</body>
+</html>

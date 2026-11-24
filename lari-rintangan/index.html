@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0b1f3a">
+<title>Lari Rintangan Sensor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bangers&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="../shared/menu.css">
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div class="hud hidden" id="hud">
+  <div><div class="score" id="score">0</div><div class="sub" id="distHud">0 m</div></div>
+  <div class="right"><div class="lives" id="lives"></div><div class="sub" id="coinHud">🪙 0</div><div class="sub" id="bestHud"></div></div>
+</div>
+<div class="msg" id="msg"></div>
+<div class="count hidden" id="count"></div>
+<div id="camBox" class="hidden"><video id="camVideo" playsinline muted autoplay></video><canvas id="skel" width="320" height="240"></canvas><div id="poseInd"><span id="pL">⬅️</span><span id="pU">⬆️</span><span id="pD">⬇️</span><span id="pR">➡️</span></div></div>
+<div id="calibBox" class="hidden"><div class="t" id="calT">KALIBRASI</div><div class="s" id="calS"></div><div class="bar"><i id="calBar"></i></div></div>
+<div class="btns hidden" id="gameBtns"><button class="btn-sm hidden" id="btnCal">🎯 Kalibrasi</button><button class="btn-sm" id="btnMute">🔊</button><button class="btn-sm" id="btnPause">⏸</button></div>
+
+<div class="overlay" id="menu">
+  <h1>LARI RINTANGAN<small>SENSOR TUBUH</small></h1>
+  <p>Berlarilah di tempat! Gerakkan <b>seluruh badanmu</b> di depan kamera untuk menghindari rintangan — seperti game Kinect.</p>
+  <div class="tips">
+    <div class="tip"><b>↔️</b>Geser badan<br>pindah jalur</div>
+    <div class="tip"><b>🦘</b>Lompat<br>lewati pagar</div>
+    <div class="tip"><b>🧎</b>Merunduk<br>lewati palang</div>
+    <div class="tip"><b>🪙</b>Ambil koin<br>untuk skor</div>
+  </div>
+  <button class="btn cam" id="btnCam">📷 Main pakai Kamera (Tubuh)</button>
+  <button class="btn" id="btnKey">⌨️ Main pakai Keyboard / Sentuhan</button>
+  <details class="camset"><summary>⚙️ Pengaturan Sensor</summary><div id="csMenu"></div></details>
+  <div class="hint">Berdirilah ±2 meter dari kamera, pastikan <b>kepala sampai pinggang</b> terlihat dan ruangan cukup terang. Keyboard: ←/→ pindah jalur, ↑ atau spasi lompat, ↓ merunduk. Sentuhan: geser ke arah yang diinginkan.</div>
+  <div class="warn hidden" id="menuMsg"></div>
+  <a class="btn ghost" href="../index.html">🎮 Daftar Game</a>
+</div>
+
+<div class="overlay hidden" id="over">
+  <h2 id="overTitle">GAME OVER</h2>
+  <div class="big" id="overScore">0</div>
+  <p id="overInfo"></p>
+  <button class="btn cam" id="btnAgainCam">📷 Main Lagi (Kamera)</button>
+  <button class="btn" id="btnAgainKey">⌨️ Main Lagi (Keyboard)</button>
+  <button class="btn ghost" id="btnHome">🏠 Menu</button>
+  <a class="btn ghost" href="../index.html">🎮 Daftar Game</a>
+</div>
+
+<div class="overlay hidden" id="paused">
+  <h2 style="color:#ffd23f;text-shadow:0 4px 0 #7a3b00">JEDA</h2>
+  <details class="camset" id="csPauseBox"><summary>⚙️ Pengaturan Sensor</summary><div id="csPause"></div></details>
+  <button class="btn" id="btnResume">▶ Lanjut</button>
+  <button class="btn ghost" id="btnQuit">🏠 Menu</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>if (typeof THREE === 'undefined') { var mm = document.getElementById('menuMsg'); mm.textContent = 'Gagal memuat Three.js (butuh internet). Periksa koneksi lalu muat ulang halaman.'; mm.classList.remove('hidden'); }</script>
+<script src="../shared/camguide.js"></script>
+<script src="js/00-dasar.js"></script>
+<script src="js/01-scene.js"></script>
+<script src="js/02-lingkungan.js"></script>
+<script src="js/03-fasad-gedung-realistis.js"></script>
+<script src="js/04-pohon-realistis-tajuk.js"></script>
+<script src="js/05-langit-matahari-bulan.js"></script>
+<script src="js/06-audio.js"></script>
+<script src="js/07-state.js"></script>
+<script src="js/08-spawn.js"></script>
+<script src="js/09-update.js"></script>
+<script src="js/10-hud.js"></script>
+<script src="js/11-kontrol-keyboard-sentuhan.js"></script>
+<script src="js/12-kontrol-kamera-pose.js"></script>
+<script src="js/13-pengaturan-sensor.js"></script>
+<script src="js/14-alur-game.js"></script>
+<script src="js/15-render.js"></script>
+<script src="js/16-loop.js"></script>
+<script src="../shared/menu.js"></script>
+<script>/* hitung "dimainkan" global (sekali per tab per game) */(function(){try{var s=location.pathname.split('/').filter(Boolean);if(s.length&&/\.html?$/i.test(s[s.length-1]))s.pop();var g=s.pop();if(!g)return;var k='played_'+g;if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1');fetch('../api/hit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:g+'/'}),keepalive:true}).catch(function(){})}catch(e){}})();</script>
+</body>
+</html>

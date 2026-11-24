@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#140a2e">
+<title>Lubang di Dinding Sensor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bangers&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="../shared/menu.css">
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div class="hud hidden" id="hud">
+  <div><div class="score" id="score">0</div><div class="sub" id="wallHud">DINDING 0</div><div class="combo" id="comboHud"></div></div>
+  <div class="right"><div class="timer hidden" id="timerHud">5:00</div><div class="lives" id="lives"></div><div class="sub" id="bestHud"></div></div>
+</div>
+<div class="hud vs hidden" id="hudVs">
+  <div class="pbox p1"><div class="pn">P1 ●</div><div class="score" id="vs1">0</div><div class="lives" id="vl1"></div><div class="combo" id="vc1"></div></div>
+  <div class="mid"><div class="timer hidden" id="timerHud2">5:00</div><div class="sub" id="wallHud2">DINDING 0</div></div>
+  <div class="pbox p2"><div class="pn">● P2</div><div class="score" id="vs2">0</div><div class="lives" id="vl2"></div><div class="combo" id="vc2"></div></div>
+</div>
+<div id="hint" class="hidden"><canvas id="hintC" width="192" height="224"></canvas><div id="hintName"></div><div id="hintBar"><i id="hintFill"></i></div></div>
+<div id="hint2" class="hidden"><canvas id="hintC2" width="192" height="224"></canvas><div id="hintName2"></div><div id="hintBar2"><i id="hintFill2"></i></div></div>
+<div class="powHud hidden" id="powHud"></div>
+<div class="coach hidden" id="coach0"></div><div class="coach hidden" id="coach1"></div><div class="chainHud hidden" id="chainHud"></div>
+<div class="msg" id="msg"></div><div class="msg half l hidden" id="msg1"></div><div class="msg half r hidden" id="msg2"></div>
+<div class="flash" id="flash"></div><div class="tflash" id="themeFlash"></div>
+<div class="count hidden" id="count"></div>
+<div id="camBox" class="hidden"><video id="camVideo" playsinline muted autoplay></video><canvas id="skel" width="320" height="240"></canvas></div>
+<div id="calibBox" class="hidden"><div class="t">KALIBRASI</div><div class="s" id="calS"></div><div class="bar"><i id="calBar"></i></div><div class="s" id="calS2" style="margin-top:12px"></div><div class="bar" id="calBarBox2"><i id="calBar2"></i></div></div>
+<div class="stepBtns hidden" id="stepBtns"><button class="btn-sm" id="stepL" type="button">◀ Geser (Q)</button><button class="btn-sm" id="stepR" type="button">Geser (E) ▶</button></div>
+<div id="presetBar" class="hidden"></div><div id="presetBar2" class="hidden"></div>
+<div class="btns hidden" id="gameBtns"><button class="btn-sm hidden" id="btnCal">🎯 Kalibrasi</button><button class="btn-sm" id="btnMute">🔊</button><button class="btn-sm" id="btnPause">⏸</button></div>
+
+<div class="overlay" id="menu">
+  <h1>LUBANG DI DINDING<small>SENSOR TUBUH</small></h1>
+  <p>Dinding bersiluet pose bergerak ke arahmu. <b>Tirukan posenya</b> dengan badanmu supaya muat melewati lubang — seperti game Kinect!</p>
+  <div class="tips">
+    <div class="tip"><b>🧍</b>Lihat pose di<br>kotak atas</div>
+    <div class="tip"><b>🙆</b>Tiru dengan<br>seluruh lengan</div>
+    <div class="tip"><b>🟢</b>Sendi hijau =<br>pas di lubang</div>
+    <div class="tip"><b>❤️</b>3 nyawa,<br>makin cepat</div>
+  </div>
+  <div class="modes"><button class="btn mode on" id="btnM1">👤 1 Player</button><button class="btn mode" id="btnM2">👥 2 Player</button></div>
+  <div class="hint hidden" id="vsHelp"><b>2 Player:</b> berdirilah <b>berdampingan</b> di depan kamera (jarak antar badan ±1 meter supaya lengan bisa direntangkan). Dinding punya <b style="color:#ffb35a">satu lubang untuk tiap pemain</b> dengan pose masing-masing: <b style="color:#ffb35a">P1 di kiri</b>, <b style="color:#6fc8ff">P2 di kanan</b>. Skor dan 3 ❤ sendiri-sendiri, dan kalau keduanya SEMPURNA, ada bonus <b>KOMPAK +50</b>. Tanpa kamera: P1 pakai tombol pose di kiri (angka / A,D), P2 di kanan (panah ◀ ▶).</div>
+  <div class="modes" id="modeBox"><button class="btn mode" data-c="0">❤️ Klasik (3 nyawa)</button><button class="btn mode" data-c="1">😌 Santai (5 menit, tanpa nyawa)</button><button class="btn mode" data-c="2">🎓 Latihan</button></div>
+  <div class="hint hidden" id="chillHelp"><b>Mode Santai:</b> gagal melewati lubang <b>tidak mengurangi nyawa</b> (hanya combo yang putus). Permainan berlangsung <b>5 menit</b>, lalu skor akhir dihitung. Kumpulkan skor sebanyak mungkin!</div>
+  <div class="hint hidden" id="pracHelp"><b>Mode Latihan:</b> tanpa nyawa dan tanpa batas waktu. Pilih pose yang mau dilatih — dinding datang <b>satu per satu</b> dengan jeda, panduan sendi selalu menyala, dan pose yang gagal <b>diulang</b> sampai lolos. Tidak masuk papan peringkat.</div>
+  <div class="prac hidden" id="pracBox"></div>
+  <div class="modes" id="diffBox"><button class="btn mode" data-d="0">😊 Mudah</button><button class="btn mode on" data-d="1">😎 Normal</button><button class="btn mode" data-d="2">🔥 Sulit</button></div>
+  <div class="lb hidden" id="lbMenu"><div class="lbt" id="lbMenuT">🏆 PERINGKAT GLOBAL</div><ol id="lbMenuList"></ol></div>
+  <button class="btn cam" id="btnCam">📷 Main pakai Kamera (Tubuh)</button>
+  <button class="btn" id="btnKey">🖱️ Main tanpa Kamera (tombol pose)</button>
+  <details class="camset"><summary>⚙️ Pengaturan</summary><div id="csMenu"></div></details>
+  <div class="hint"><b>Baru:</b> <b>pose kaki</b> (SUMO, LUNGE, BANGAU, POHON) dan <b>lubang bergeser</b> — melangkahlah ke samping mengikuti lubang (1 Player). Tanpa kamera: tombol <b>Q / E</b> atau ◀ ▶ Geser. Pose kaki bisa dimatikan di ⚙️ Pengaturan.</div>
+  <div class="hint">Berdirilah ±2–3 meter dari kamera dengan <b>badan bagian atas</b> terlihat jelas (kepala, kedua lengan, dan pinggang), ruangan terang, dan pakaian yang kontras dengan latar. Tanpa kamera: tekan tombol pose di bawah layar (atau angka 1–9, 0).</div>
+  <div class="warn hidden" id="menuMsg"></div>
+  <a class="btn ghost" href="../index.html">🎮 Daftar Game</a>
+</div>
+
+<div class="overlay hidden" id="over">
+  <h2 id="overTitle">GAME OVER</h2>
+  <div class="big" id="overScore">0</div>
+  <p id="overInfo"></p>
+  <div id="overTable" class="hidden"></div>
+  <div class="lb hidden" id="lbBox"><div class="lbt" id="lbTitle">🏆 PERINGKAT GLOBAL</div><div class="lbn hidden" id="lbForm"><input id="lbName" maxlength="16" placeholder="Nama kamu (maks. 16)" autocomplete="off"><button class="btn-sm" id="lbSave" type="button">Kirim skor</button></div><div class="lbmsg" id="lbMsg"></div><ol id="lbList"></ol></div>
+  <button class="btn cam" id="btnAgainCam">📷 Main Lagi (Kamera)</button>
+  <button class="btn" id="btnAgainKey">🖱️ Main Lagi (Tombol Pose)</button>
+  <button class="btn ghost" id="btnHome">🏠 Menu</button>
+  <a class="btn ghost" href="../index.html">🎮 Daftar Game</a>
+</div>
+
+<div class="overlay hidden" id="paused">
+  <h2 style="color:#ffd23f;text-shadow:0 4px 0 #7a3b00">JEDA</h2>
+  <details class="camset" id="csPauseBox"><summary>⚙️ Pengaturan</summary><div id="csPause"></div></details>
+  <button class="btn" id="btnResume">▶ Lanjut</button>
+  <button class="btn alt hidden" id="btnFinish">🏁 Selesai &amp; lihat ringkasan</button>
+  <button class="btn ghost" id="btnQuit">🏠 Menu</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>if (typeof THREE === 'undefined') { var mm = document.getElementById('menuMsg'); mm.textContent = 'Gagal memuat Three.js (butuh internet). Periksa koneksi lalu muat ulang halaman.'; mm.classList.remove('hidden'); }</script>
+<script src="../shared/camguide.js"></script>
+<script src="../shared/leaderboard.js"></script>
+<script src="js/00-dasar.js"></script>
+<script src="js/01-model-pose.js"></script>
+<script src="js/02-three-js.js"></script>
+<script src="js/03-dinding-berlubang-satu.js"></script>
+<script src="js/04-avatar-kerangka-3d.js"></script>
+<script src="js/04b-efek.js"></script>
+<script src="js/04c-tema.js"></script>
+<script src="js/05-audio.js"></script>
+<script src="js/05b-musik.js"></script>
+<script src="js/06-state.js"></script>
+<script src="js/07-hud.js"></script>
+<script src="js/07b-panduan-sendi.js"></script>
+<script src="js/08-kamera-pose-1.js"></script>
+<script src="js/09-pengaturan.js"></script>
+<script src="js/09b-peringkat.js"></script>
+<script src="js/09c-latihan.js"></script>
+<script src="js/10-alur-game.js"></script>
+<script src="js/11-update-render.js"></script>
+<script src="../shared/menu.js"></script>
+<script>/* hitung "dimainkan" global (sekali per tab per game) */(function(){try{var s=location.pathname.split('/').filter(Boolean);if(s.length&&/\.html?$/i.test(s[s.length-1]))s.pop();var g=s.pop();if(!g)return;var k='played_'+g;if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1');fetch('../api/hit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:g+'/'}),keepalive:true}).catch(function(){})}catch(e){}})();</script>
+</body>
+</html>

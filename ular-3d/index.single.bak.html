@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#07130d">
+<title>Ular 3D Sensor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bangers&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#07130d;touch-action:none;-webkit-user-select:none;user-select:none;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#fff}
+  canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+  .hud{position:fixed;top:0;left:0;right:0;padding:calc(env(safe-area-inset-top) + 10px) 16px 0;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;font-family:Bangers,Impact,"Arial Black",sans-serif}
+  .score{font-size:48px;line-height:1;color:#b6ff6a;text-shadow:0 3px 0 #1d5a00,0 0 16px rgba(120,255,80,.5);letter-spacing:1px;transition:transform .12s}
+  .score.pop{transform:scale(1.3)}
+  .sub{font-size:16px;color:#cfe9c4;opacity:.85;letter-spacing:1px;margin-top:3px}
+  .right{text-align:right}
+  .pops{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+  .pops b{position:absolute;font-family:Bangers,Impact,sans-serif;font-size:30px;color:#fff36a;text-shadow:0 3px 0 #6a4a00,0 0 10px rgba(0,0,0,.5);transform:translate(-50%,-50%);animation:up .9s ease-out forwards;white-space:nowrap}
+  @keyframes up{0%{opacity:0;transform:translate(-50%,-30%) scale(.4)}20%{opacity:1;transform:translate(-50%,-60%) scale(1.25)}100%{opacity:0;transform:translate(-50%,-190%) scale(1)}}
+  .btns{position:fixed;right:12px;bottom:calc(env(safe-area-inset-bottom) + 12px);display:flex;gap:8px}
+  .btn-sm{background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:999px;padding:9px 14px;font-size:14px;font-family:inherit;cursor:pointer}
+  .overlay{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;background:radial-gradient(ellipse at center,rgba(5,25,14,.55),rgba(2,10,6,.92));gap:14px;overflow:auto}
+  .hidden{display:none!important}
+  h1{font-family:Bangers,Impact,"Arial Black",sans-serif;font-weight:400;font-size:clamp(52px,15vw,104px);margin:0 0 6px;line-height:.88;color:#b6ff6a;text-shadow:0 5px 0 #1d6a00,0 12px 26px rgba(0,0,0,.6);letter-spacing:2px;transform:rotate(-3deg)}
+  h1 small{display:block;font-size:.42em;color:#ffd23f;text-shadow:0 3px 0 #7a4a00;letter-spacing:3px}
+  h2{font-family:Bangers,Impact,"Arial Black",sans-serif;font-weight:400;font-size:56px;margin:0;color:#ff5a3c;text-shadow:0 4px 0 #5a0d00;letter-spacing:2px}
+  .big{font-family:Bangers,Impact,sans-serif;font-size:72px;color:#b6ff6a;text-shadow:0 4px 0 #1d5a00;line-height:1}
+  p{max-width:400px;margin:0;color:#d6ecd0;line-height:1.45;font-size:15px}
+  .btn{font-family:Bangers,Impact,"Arial Black",sans-serif;font-size:26px;letter-spacing:1px;padding:14px 26px;border:0;border-radius:16px;color:#052a10;background:linear-gradient(#d6ff9a,#6fe03a);box-shadow:0 5px 0 #2d7a10,0 10px 20px rgba(0,0,0,.4);min-width:250px;cursor:pointer;text-decoration:none;display:inline-block}
+  .btn:active{transform:translateY(3px);box-shadow:0 2px 0 #2d7a10}
+  .btn.cam{background:linear-gradient(#9fe7ff,#2fa8e8);box-shadow:0 5px 0 #145f8a,0 10px 20px rgba(0,0,0,.4);color:#02263a}
+  .btn.cam:active{box-shadow:0 2px 0 #145f8a}
+  .btn.ghost{font-size:20px;padding:10px 20px;min-width:0;background:rgba(255,255,255,.12);color:#d6ecd0;box-shadow:none;border:1px solid rgba(255,255,255,.25)}
+  .opts{display:flex;flex-direction:column;gap:8px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:10px 16px;font-size:14px;text-align:left}
+  .opts label{display:flex;gap:10px;align-items:center;justify-content:space-between}
+  .opts input[type=checkbox]{width:20px;height:20px;accent-color:#6fe03a}
+  .opts input[type=range]{width:140px;accent-color:#6fe03a}
+  details.camset{max-width:380px;width:100%;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:8px 14px;text-align:left;font-size:14px;color:#d6ecd0}
+  details.camset summary{cursor:pointer;padding:4px 0;font-weight:600}
+  .cs{margin:12px 0}
+  .cs .row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .cs input[type=range]{width:150px;accent-color:#6fe03a}
+  .cs .val{min-width:34px;text-align:right;font-variant-numeric:tabular-nums;color:#b6ff6a}
+  .cs small{display:block;opacity:.65;font-size:12px;margin-top:2px}
+  .btn.tiny{font-size:16px;padding:6px 14px;min-width:0}
+  .hint{font-size:12.5px;opacity:.75;max-width:380px}
+  .warn{color:#ffb38a;font-size:13.5px;max-width:380px;line-height:1.4}
+  .pbox .pn{font-size:15px;letter-spacing:2px}
+  .pbox.p1 .pn{color:#ffa23c}.pbox.p2 .pn{color:#4fb8ff}
+  .pbox.p1 .score{color:#ffb35a;text-shadow:0 3px 0 #7a3a00,0 0 16px rgba(255,150,40,.5)}
+  .pbox.p2 .score{color:#6fc8ff;text-shadow:0 3px 0 #00407a,0 0 16px rgba(60,170,255,.5)}
+  .pbox.p2{text-align:right}
+  .hud.vs .score{font-size:42px}
+  .lives{font-size:24px;line-height:1;margin-top:4px;letter-spacing:2px}
+  .lives span{display:inline-block;color:#ff3b30;text-shadow:0 2px 0 #5a0000}
+  .lives span.lost{color:rgba(255,255,255,.18);text-shadow:none;transform:scale(.8)}
+  .mid{font-size:20px;color:#ffd23f;padding-top:8px;text-align:center}
+  .modes{display:flex;gap:8px}
+  .btn.mode{font-size:18px;padding:8px 16px;min-width:0;background:rgba(255,255,255,.12);color:#d6ecd0;box-shadow:none;border:1px solid rgba(255,255,255,.25)}
+  .btn.mode.on{background:linear-gradient(#d6ff9a,#6fe03a);color:#052a10;border-color:#6fe03a}
+  #camBox.vs{width:min(44vw,220px)}
+  #camBox .arrow{width:100%}
+  #camBox.vs #arrow0{width:50%}
+  #camBox.vs #arrow1{left:50%;width:50%}
+  #camBox:not(.vs) #arrow1{display:none}
+  #camBox.vs::after{content:"";position:absolute;top:0;bottom:0;left:50%;border-left:1px dashed rgba(255,255,255,.5)}
+  #camBox{position:fixed;left:12px;bottom:calc(env(safe-area-inset-bottom) + 12px);width:min(34vw,170px);border-radius:12px;overflow:hidden;border:2px solid rgba(255,90,60,.9);background:#000;pointer-events:none}
+  #camBox.has{border-color:rgba(127,255,106,.95)}
+  #camBox video{display:block;width:100%;transform:scaleX(-1)}
+  #camBox .arrow{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:44px;text-shadow:0 2px 8px #000;opacity:.95}
+  .toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 90px);transform:translateX(-50%);background:rgba(0,0,0,.78);padding:10px 16px;border-radius:12px;font-size:14px;max-width:84%;text-align:center;transition:opacity .4s;pointer-events:none;opacity:0}
+  .toast.show{opacity:1}
+  .count{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;font-family:Bangers,Impact,sans-serif;font-size:140px;color:#fff;text-shadow:0 6px 0 #1d5a00,0 0 40px rgba(120,255,80,.6)}
+  .count.go{animation:cnt .5s ease-out}
+  @keyframes cnt{from{transform:scale(2);opacity:0}to{transform:scale(1);opacity:1}}
+</style>
+</head>
+<body>
+<div class="pops" id="pops"></div>
+<div class="hud hidden" id="hud">
+  <div><div class="score" id="score">0</div><div class="sub" id="bestHud">TERBAIK 0</div></div>
+  <div class="right"><div class="sub" id="lenHud">PANJANG 4</div><div class="sub" id="goldHud"></div></div>
+</div>
+<div class="hud vs hidden" id="hudVs">
+  <div class="pbox p1"><div class="pn">P1 ●</div><div class="score" id="vs1">0</div><div class="lives" id="vl1"></div></div>
+  <div class="mid" id="goldMid"></div>
+  <div class="pbox p2"><div class="pn">● P2</div><div class="score" id="vs2">0</div><div class="lives" id="vl2"></div></div>
+</div>
+<div class="count hidden" id="count"></div>
+<div id="camBox" class="hidden"><video id="camVideo" playsinline muted autoplay></video><div class="arrow" id="arrow0"></div><div class="arrow" id="arrow1"></div></div>
+<div class="btns hidden" id="gameBtns">
+  <button class="btn-sm" id="btnMute">🔊</button>
+  <button class="btn-sm" id="btnPause">⏸</button>
+</div>
+
+<div class="overlay" id="menu">
+  <h1>ULAR 3D<small>SENSOR</small></h1>
+  <p>Arahkan <b>jari telunjuk</b> ke kamera ke arah yang kamu mau (atas, bawah, kiri, kanan). Makan 🍎, jangan tabrak dinding atau badan sendiri. Apel emas ⭐ bernilai besar tapi cepat hilang.</p>
+  <div class="modes"><button class="btn mode on" id="btnM1">👤 1 Player</button><button class="btn mode" id="btnM2">👥 2 Player</button></div>
+  <div class="hint hidden" id="vsHelp"><b>2 Player:</b> satu arena, dua ular — <b style="color:#ffa23c">P1 oranye</b> dan <b style="color:#4fb8ff">P2 biru</b>, masing-masing 3 ❤. Rebutan 🍎 dan ⭐. Menabrak dinding, badan sendiri, atau ular lawan = −1 ❤ lalu muncul lagi (kebal 2,5 detik). Nyawa habis duluan = kalah. <b>Kamera:</b> tunjukkan 2 tangan, tangan kiri jadi P1, kanan jadi P2. <b>Sentuhan:</b> P1 geser di sisi kiri layar, P2 di sisi kanan. <b>Keyboard:</b> P1 WASD, P2 panah.</div>
+  <button class="btn cam" id="btnCam">📷 Main pakai Kamera (Jari)</button>
+  <button class="btn" id="btnTouch">👆 Main pakai Sentuhan / Keyboard</button>
+  <div class="opts">
+    <label>Tembus dinding <input type="checkbox" id="oWrap"></label>
+    <label>Tampilkan pratinjau kamera <input type="checkbox" id="oPrev" checked></label>
+  </div>
+  <details class="camset"><summary>📷 Pengaturan Kamera</summary><div id="csMenu"></div></details>
+  <div class="hint">Sentuhan: geser jari ke arah tujuan. Keyboard: panah atau WASD, spasi untuk jeda.</div>
+  <div class="warn hidden" id="menuMsg"></div>
+  <a class="btn ghost" href="../index.html">🎮 Daftar Game</a>
+</div>
+
+<div class="overlay hidden" id="over">
+  <h2 id="overTitle">GAME OVER</h2>
+  <div class="big" id="overScore">0</div>
+  <p id="overInfo"></p>
+  <button class="btn cam" id="btnAgainCam">📷 Main Lagi (Kamera)</button>
+  <button class="btn" id="btnAgainTouch">👆 Main Lagi (Sentuhan)</button>
+  <button class="btn ghost" id="btnHome">🏠 Menu</button>
+  <a class="btn ghost" href="../index.html">🎮 Daftar Game</a>
+</div>
+
+<div class="overlay hidden" id="paused">
+  <h2 style="color:#b6ff6a;text-shadow:0 4px 0 #1d5a00">JEDA</h2>
+  <details class="camset" id="csPauseBox"><summary>📷 Pengaturan Kamera</summary><div id="csPause"></div></details>
+  <button class="btn" id="btnResume">▶ Lanjut</button>
+  <button class="btn ghost" id="btnQuit">🏠 Menu</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem('ular3d_' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem('ular3d_' + k, JSON.stringify(v)); } catch (e) {} }
+  };
+  if (typeof THREE === 'undefined') {
+    $('menuMsg').textContent = 'Gagal memuat Three.js (butuh internet). Periksa koneksi lalu muat ulang halaman.';
+    $('menuMsg').classList.remove('hidden');
+    return;
+  }
+
+  // ---------- konstanta ----------
+  const N = 18;                                  // ukuran papan (N x N)
+  const DIRS = { U: { x: 0, y: -1, k: 'U' }, D: { x: 0, y: 1, k: 'D' }, L: { x: -1, y: 0, k: 'L' }, R: { x: 1, y: 0, k: 'R' } };
+  const ARROW = { U: '⬆️', D: '⬇️', L: '⬅️', R: '➡️' };
+  const wx = i => i - (N - 1) / 2, wz = j => j - (N - 1) / 2;   // sel -> dunia
+  const CAM_DEF = { sens: 6, confirm: 2, ratio: 1.15 };
+  const settings = Object.assign({ wrap: false, prev: true, mute: false }, CAM_DEF, store.get('settings', {}));
+  const saveSettings = () => store.set('settings', settings);
+
+  // ---------- three.js: scene ----------
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  document.body.prepend(renderer.domElement);
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x07130d);
+  scene.fog = new THREE.Fog(0x07130d, 40, 95);
+  const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 200);
+
+  scene.add(new THREE.HemisphereLight(0xcfffe0, 0x14301f, 0.75));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.9);
+  sun.position.set(-8, 22, 10);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(1024, 1024);
+  Object.assign(sun.shadow.camera, { left: -14, right: 14, top: 14, bottom: -14, near: 1, far: 60 });
+  scene.add(sun);
+
+  // lantai kotak-kotak
+  (() => {
+    const c = document.createElement('canvas'); c.width = c.height = 512;
+    const x = c.getContext('2d'), s = 512 / N;
+    for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+      x.fillStyle = (i + j) % 2 ? '#1c4a2c' : '#216034';
+      x.fillRect(i * s, j * s, s, s);
+    }
+    const tex = new THREE.CanvasTexture(c);
+    tex.anisotropy = 4;
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(N, N), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.9 }));
+    floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true;
+    scene.add(floor);
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(300, 300), new THREE.MeshStandardMaterial({ color: 0x0a1f14, roughness: 1 }));
+    ground.rotation.x = -Math.PI / 2; ground.position.y = -0.6; ground.receiveShadow = true;
+    scene.add(ground);
+    // bingkai papan
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0x3a2a1a, roughness: 0.7, emissive: 0x201004 });
+    const glowMat = new THREE.MeshBasicMaterial({ color: 0x7dff5a });
+    const L = N + 1.2;
+    [[0, -(N / 2 + 0.3), L, 0.6], [0, N / 2 + 0.3, L, 0.6], [-(N / 2 + 0.3), 0, 0.6, L], [N / 2 + 0.3, 0, 0.6, L]].forEach(([px, pz, sx, sz]) => {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(sx, 0.9, sz), wallMat);
+      m.position.set(px, 0.2, pz); m.castShadow = m.receiveShadow = true; scene.add(m);
+      const g = new THREE.Mesh(new THREE.BoxGeometry(sx > sz ? sx : 0.12, 0.06, sz > sx ? sz : 0.12), glowMat);
+      g.position.set(px + (sx < sz ? (px > 0 ? -0.2 : 0.2) : 0), 0.68, pz + (sz < sx ? (pz > 0 ? -0.2 : 0.2) : 0));
+      scene.add(g);
+    });
+  })();
+
+  // ular: bola-bola ber-instance
+  const MAXI = N * N * 2 + 8;
+  const bodyMesh = new THREE.InstancedMesh(new THREE.SphereGeometry(0.5, 20, 14), new THREE.MeshStandardMaterial({ roughness: 0.3, metalness: 0.15 }), MAXI);
+  bodyMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  bodyMesh.castShadow = true; bodyMesh.receiveShadow = true; bodyMesh.frustumCulled = false;
+  bodyMesh.count = 0;
+  for (let i = 0; i < MAXI; i++) bodyMesh.setColorAt(i, new THREE.Color(0x66dd44));
+  scene.add(bodyMesh);
+
+  // kepala (satu per pemain)
+  const eyeW = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2 }), eyeB = new THREE.MeshBasicMaterial({ color: 0x111111 });
+  const heads = [0, 1].map(() => {
+    const g = new THREE.Group();
+    g.userData.mat = new THREE.MeshStandardMaterial({ color: 0x7dff5a, roughness: 0.3, metalness: 0.1 });
+    const hm = new THREE.Mesh(new THREE.SphereGeometry(0.58, 24, 18), g.userData.mat);
+    hm.scale.set(1, 0.9, 1.1); hm.castShadow = true; g.add(hm);
+    [-1, 1].forEach(sd => {
+      const e = new THREE.Mesh(new THREE.SphereGeometry(0.17, 12, 10), eyeW); e.position.set(sd * 0.27, 0.2, 0.36); g.add(e);
+      const pp = new THREE.Mesh(new THREE.SphereGeometry(0.085, 10, 8), eyeB); pp.position.set(sd * 0.27, 0.22, 0.49); g.add(pp);
+    });
+    g.userData.tongue = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.03, 0.4), new THREE.MeshBasicMaterial({ color: 0xff2d55 }));
+    g.userData.tongue.position.set(0, -0.08, 0.78); g.add(g.userData.tongue);
+    scene.add(g);
+    return g;
+  });
+
+  // apel
+  const food = new THREE.Group();
+  const apple = new THREE.Mesh(new THREE.SphereGeometry(0.38, 20, 16), new THREE.MeshStandardMaterial({ color: 0xff2d2d, roughness: 0.25, emissive: 0x5a0000 }));
+  apple.castShadow = true; food.add(apple);
+  const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.04, 0.2, 6), new THREE.MeshStandardMaterial({ color: 0x5a3a1a }));
+  stem.position.y = 0.4; food.add(stem);
+  const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.14, 10, 8), new THREE.MeshStandardMaterial({ color: 0x3fd24a }));
+  leaf.scale.set(1.6, 0.35, 0.8); leaf.position.set(0.14, 0.46, 0); leaf.rotation.z = 0.4; food.add(leaf);
+  const fLight = new THREE.PointLight(0xff5533, 0.9, 6); fLight.position.y = 0.6; food.add(fLight);
+  scene.add(food);
+
+  // apel emas
+  const gold = new THREE.Group();
+  const gem = new THREE.Mesh(new THREE.IcosahedronGeometry(0.45, 1), new THREE.MeshStandardMaterial({ color: 0xffd23f, roughness: 0.15, metalness: 0.8, emissive: 0x8a5a00 }));
+  gem.castShadow = true; gold.add(gem);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.62, 0.04, 8, 32), new THREE.MeshBasicMaterial({ color: 0xfff08a }));
+  ring.rotation.x = Math.PI / 2; gold.add(ring);
+  const gLight = new THREE.PointLight(0xffd23f, 1.2, 7); gLight.position.y = 0.6; gold.add(gLight);
+  gold.visible = false; scene.add(gold);
+
+  // partikel
+  const PART = [];
+  for (let i = 0; i < 70; i++) {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(0.09, 6, 5), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true }));
+    m.visible = false; scene.add(m); PART.push({ m, vx: 0, vy: 0, vz: 0, life: 0, max: 1 });
+  }
+  function burst(x, y, z, n, colors, speed = 4) {
+    for (const p of PART) {
+      if (n <= 0) break;
+      if (p.life > 0) continue;
+      n--;
+      const a = Math.random() * 6.283, u = Math.random() * 0.9 + 0.1, s = (0.4 + Math.random()) * speed;
+      p.vx = Math.cos(a) * s * u; p.vz = Math.sin(a) * s * u; p.vy = (1.5 + Math.random() * 3.5) * (speed / 4);
+      p.life = p.max = 0.5 + Math.random() * 0.6;
+      p.m.position.set(x, y, z); p.m.material.color.set(colors[(Math.random() * colors.length) | 0]);
+      p.m.visible = true; p.m.scale.setScalar(0.7 + Math.random() * 0.9);
+    }
+  }
+
+  // ---------- audio ----------
+  let AC = null, master = null;
+  function initAudio() {
+    try {
+      if (!AC) { AC = new (window.AudioContext || window.webkitAudioContext)(); master = AC.createGain(); master.gain.value = settings.mute ? 0 : 0.5; master.connect(AC.destination); }
+      if (AC.state === 'suspended') AC.resume();
+    } catch (e) { AC = null; }
+  }
+  function tone(dur, f0, f1, gain, type = 'sine', delay = 0) {
+    if (!AC || settings.mute) return;
+    const t = AC.currentTime + delay, o = AC.createOscillator(), g = AC.createGain();
+    o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + 0.05);
+  }
+  const sfx = {
+    turn() { tone(0.05, 500, 700, 0.05, 'triangle'); },
+    eat() { tone(0.1, 500, 900, 0.2, 'square'); tone(0.14, 900, 1400, 0.15, 'triangle', 0.07); },
+    gold() { tone(0.12, 700, 1050, 0.18, 'triangle'); tone(0.12, 1050, 1570, 0.18, 'triangle', 0.09); tone(0.2, 1570, 2100, 0.16, 'triangle', 0.18); },
+    die() { tone(0.5, 260, 50, 0.35, 'sawtooth'); tone(0.3, 120, 40, 0.4, 'square', 0.05); },
+    miss() { tone(0.3, 600, 200, 0.12, 'sine'); }
+  };
+
+  // ---------- state permainan ----------
+  let state = 'menu', versus = false, players = [], winner = null;
+  let foodCell = { x: 0, y: 0 }, goldCell = null, goldT = 0, best = store.get('best', 0);
+  let acc = 0, stepMs = 180, dieT = 0, shake = 0, useCam = false, elapsed = 0;
+  const LIVES_VS = 3;
+  const stepFor = n => Math.max(85, 180 - n * 3);
+  const totalApples = () => players.reduce((a, p) => a + p.apples, 0);
+  const mkPlayer = i => ({ i, snake: [], prev: [], dir: DIRS.R, queue: [], headAng: 0, pulseT: 99, score: 0, apples: 0, lives: versus ? LIVES_VS : 1,
+    st: 'alive', rT: 0, inv: 0, hue: versus ? (i ? 0.56 : 0.07) : 0.33, headCol: versus ? (i ? 0x4fb8ff : 0xffa23c) : 0x7dff5a, head: heads[i] });
+
+  const occupied = (x, y) => players.some(p => p.snake.some(s => s.x === x && s.y === y)) || (foodCell && foodCell.x === x && foodCell.y === y) || (goldCell && goldCell.x === x && goldCell.y === y);
+  function freeCell() {
+    for (let k = 0; k < 400; k++) {
+      const x = (Math.random() * N) | 0, y = (Math.random() * N) | 0;
+      if (!occupied(x, y)) return { x, y };
+    }
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (!occupied(x, y)) return { x, y };
+    return null;
+  }
+
+  function spawnSnake(p) {
+    const mid = (N / 2) | 0;
+    const heading = versus && p.i === 1 ? DIRS.L : DIRS.R;
+    const rows = !versus ? [mid] : (p.i === 0 ? [mid - 3, mid - 5, mid - 1, 3, 2] : [mid + 2, mid + 4, mid, N - 4, N - 3]);
+    const hx = !versus ? mid : (p.i === 0 ? 5 : N - 6);
+    let cells = null;
+    for (const y of rows) {
+      const c = [0, 1, 2, 3].map(k => ({ x: hx - heading.x * k, y }));
+      if (!c.some(q => occupied(q.x, q.y))) { cells = c; break; }
+    }
+    if (!cells) cells = [0, 1, 2, 3].map(k => ({ x: hx - heading.x * k, y: rows[0] }));
+    p.snake = cells; p.prev = cells.map(q => ({ x: q.x, y: q.y }));
+    p.dir = heading; p.queue = []; p.headAng = Math.atan2(heading.x, heading.y); p.pulseT = 99;
+  }
+
+  function resetGame() {
+    players = (versus ? [0, 1] : [0]).map(mkPlayer);
+    heads[0].visible = true; heads[1].visible = versus;
+    foodCell = null; goldCell = null; goldT = 0; gold.visible = false;
+    players.forEach(spawnSnake);
+    foodCell = freeCell();
+    winner = null; stepMs = stepFor(0); acc = -900; dieT = 0; shake = 0;
+    PART.forEach(q => { q.life = 0; q.m.visible = false; });
+    updateHud();
+  }
+
+  function turn(d, pi = 0) {
+    if (state !== 'play') return;
+    const p = players[pi]; if (!p || p.st !== 'alive') return;
+    const last = p.queue.length ? p.queue[p.queue.length - 1] : p.dir;
+    if (d.k === last.k || (d.x === -last.x && d.y === -last.y)) return;
+    if (p.queue.length < 2) { p.queue.push(d); sfx.turn(); }
+  }
+
+  function crashPlayer(p) {
+    p.lives--; p.st = p.lives > 0 ? 'dead' : 'out'; p.rT = 1.2; shake = 1;
+    sfx.die(); try { navigator.vibrate && navigator.vibrate([80, 40, 200]); } catch (e) {}
+    const cols = p.i === 0 && versus ? ['#ffa23c', '#ffe08a', '#ffffff'] : p.i === 1 ? ['#4fb8ff', '#b5e4ff', '#ffffff'] : ['#ff3b30', '#ffcc33', '#ffffff'];
+    const n = p.snake.length;
+    for (let k = 0; k < n; k += Math.max(1, (n / 7) | 0)) {
+      const q = p.snake[k];
+      burst(wx(Math.max(0, Math.min(N - 1, q.x))), 0.6, wz(Math.max(0, Math.min(N - 1, q.y))), 9, cols, 6);
+    }
+    p.snake = []; p.prev = []; p.queue = [];
+    updateHud();
+  }
+
+  function endMatch() {
+    const out = players.filter(p => p.st === 'out');
+    if (!out.length) return false;
+    if (versus) winner = out.length === players.length ? (players[0].score === players[1].score ? 'tie' : (players[0].score > players[1].score ? 0 : 1)) : (out[0].i === 0 ? 1 : 0);
+    state = 'dying'; dieT = 1.2;
+    return true;
+  }
+
+  function tick() {
+    const act = players.filter(p => p.st === 'alive');
+    const info = act.map(p => {
+      if (p.queue.length) { const nd = p.queue.shift(); if (!(nd.x === -p.dir.x && nd.y === -p.dir.y)) p.dir = nd; }
+      const h = p.snake[0];
+      let nx = h.x + p.dir.x, ny = h.y + p.dir.y, wall = false;
+      if (settings.wrap) { nx = (nx + N) % N; ny = (ny + N) % N; }
+      else if (nx < 0 || ny < 0 || nx >= N || ny >= N) wall = true;
+      const eatF = !wall && foodCell && nx === foodCell.x && ny === foodCell.y;
+      const eatG = !wall && goldCell && nx === goldCell.x && ny === goldCell.y;
+      return { p, nx, ny, eatF, eatG, grow: eatF || eatG, crash: wall };
+    });
+    // tabrakan (simultan)
+    for (const a of info) {
+      if (a.crash || a.p.inv > 0) continue;
+      for (const q of info) {
+        if (q.p.inv > 0) continue;
+        const cells = q.grow ? q.p.snake : q.p.snake.slice(0, -1);
+        if (cells.some(c => c.x === a.nx && c.y === a.ny)) { a.crash = true; break; }
+        if (q !== a && q.nx === a.nx && q.ny === a.ny) { a.crash = true; break; }
+      }
+    }
+    for (const a of info) {
+      const p = a.p;
+      if (a.crash) { crashPlayer(p); continue; }
+      p.prev = p.snake.map(c => ({ x: c.x, y: c.y }));
+      p.snake.unshift({ x: a.nx, y: a.ny });
+      if (!a.grow) p.snake.pop();
+      if (a.eatF) {
+        p.apples++; p.score += 10; p.pulseT = 0; sfx.eat();
+        burst(wx(a.nx), 0.5, wz(a.ny), 18, ['#ff3b30', '#ff8a8a', '#ffffff']);
+        popText('+10', wx(a.nx), 0.9, wz(a.ny));
+        foodCell = null; foodCell = freeCell();
+        if (totalApples() % 5 === 0 && !goldCell) { goldCell = freeCell(); goldT = 8; }
+        updateHud(true, p.i);
+      } else if (a.eatG) {
+        p.apples++; p.score += 30; p.pulseT = 0; sfx.gold();
+        burst(wx(a.nx), 0.5, wz(a.ny), 30, ['#ffd23f', '#fff6a0', '#ffffff'], 6);
+        popText('+30 ⭐', wx(a.nx), 0.9, wz(a.ny));
+        goldCell = null; gold.visible = false;
+        updateHud(true, p.i);
+      }
+    }
+    stepMs = stepFor(versus ? totalApples() * 0.6 : totalApples());
+    endMatch();
+  }
+
+  // ---------- HUD ----------
+  const v3 = new THREE.Vector3();
+  function popText(txt, x, y, z) {
+    v3.set(x, y, z).project(camera);
+    const el = document.createElement('b');
+    el.textContent = txt;
+    el.style.left = ((v3.x * 0.5 + 0.5) * innerWidth) + 'px';
+    el.style.top = ((-v3.y * 0.5 + 0.5) * innerHeight) + 'px';
+    $('pops').appendChild(el);
+    setTimeout(() => el.remove(), 950);
+  }
+  function heartsHtml(p) { let h = ''; for (let i = 0; i < LIVES_VS; i++) h += `<span class="${i >= p.lives ? 'lost' : ''}">❤</span>`; return h; }
+  function updateHud(pop, pi = 0) {
+    if (versus) {
+      $('vs1').textContent = players[0] ? players[0].score : 0; $('vs2').textContent = players[1] ? players[1].score : 0;
+      if (players[0]) $('vl1').innerHTML = heartsHtml(players[0]);
+      if (players[1]) $('vl2').innerHTML = heartsHtml(players[1]);
+    } else {
+      const p = players[0] || { score: 0, snake: [] };
+      $('score').textContent = p.score;
+      $('bestHud').textContent = 'TERBAIK ' + Math.max(best, p.score);
+      $('lenHud').textContent = 'PANJANG ' + p.snake.length;
+    }
+    if (pop) { const s = $(versus ? 'vs' + (pi + 1) : 'score'); s.classList.add('pop'); setTimeout(() => s.classList.remove('pop'), 130); }
+  }
+  let toastTimer = 0;
+  function toast(msg, ms = 3000) {
+    const t = $('toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), ms);
+  }
+  const show = (id, on) => $(id).classList.toggle('hidden', !on);
+
+  // ---------- kontrol: sentuhan + keyboard ----------
+  const swipes = new Map();
+  addEventListener('pointerdown', e => {
+    if (e.target.closest && e.target.closest('button,a,.overlay,details')) return;
+    initAudio();
+    swipes.set(e.pointerId, { x: e.clientX, y: e.clientY, o: versus ? (e.clientX < innerWidth / 2 ? 0 : 1) : 0 });
+  });
+  addEventListener('pointermove', e => {
+    const sw = swipes.get(e.pointerId); if (!sw) return;
+    const dx = e.clientX - sw.x, dy = e.clientY - sw.y;
+    if (Math.hypot(dx, dy) < 26) return;
+    turn(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? DIRS.R : DIRS.L) : (dy > 0 ? DIRS.D : DIRS.U), sw.o);
+    sw.x = e.clientX; sw.y = e.clientY;
+  });
+  const endSwipe = e => swipes.delete(e.pointerId);
+  addEventListener('pointerup', endSwipe);
+  addEventListener('pointercancel', endSwipe);
+  addEventListener('keydown', e => {
+    const k = e.key.toLowerCase();
+    const wasd = { w: DIRS.U, s: DIRS.D, a: DIRS.L, d: DIRS.R }[k];
+    const arr = { arrowup: DIRS.U, arrowdown: DIRS.D, arrowleft: DIRS.L, arrowright: DIRS.R }[k];
+    if (wasd) { e.preventDefault(); turn(wasd, 0); }
+    else if (arr) { e.preventDefault(); turn(arr, versus ? 1 : 0); }
+    else if (k === ' ' || k === 'p') { e.preventDefault(); if (state === 'play') pauseGame(); else if (state === 'paused') resumeGame(); }
+  });
+
+  // ---------- kontrol: kamera (arah telunjuk) ----------
+  const MP = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
+  const HAND_MODEL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
+  const cam = { on: false, stream: null, lm: null, loading: null, lastVT: -1, lastTs: 0, has: false, pl: [{ cand: null, cnt: 0 }, { cand: null, cnt: 0 }], lastMx: [null, null] };
+  const video = $('camVideo');
+
+  function loadHandModel() {
+    if (cam.lm) return Promise.resolve(cam.lm);
+    if (cam.loading) return cam.loading;
+    cam.loading = (async () => {
+      const vision = await import(`${MP}/vision_bundle.mjs`);
+      const files = await vision.FilesetResolver.forVisionTasks(`${MP}/wasm`);
+      const opts = d => ({ baseOptions: { modelAssetPath: HAND_MODEL, delegate: d }, runningMode: 'VIDEO', numHands: 1,
+        minHandDetectionConfidence: 0.5, minHandPresenceConfidence: 0.5, minTrackingConfidence: 0.5 });
+      try { cam.lm = await vision.HandLandmarker.createFromOptions(files, opts('GPU')); }
+      catch (e) { cam.lm = await vision.HandLandmarker.createFromOptions(files, opts('CPU')); }
+      return cam.lm;
+    })();
+    cam.loading.catch(() => { cam.loading = null; });
+    return cam.loading;
+  }
+
+  // ---------- pengaturan responsivitas kamera ----------
+  const CS = [
+    { k: 'sens', label: 'Kepekaan jari', min: 1, max: 10, step: 1, fmt: v => v, tip: 'Tinggi = jari yang ditekuk sedikit pun sudah dianggap menunjuk' },
+    { k: 'confirm', label: 'Kecepatan respons', min: 1, max: 5, step: 1, fmt: v => v === 1 ? 'instan' : v + ' frame', tip: 'Kecil = ular cepat belok tapi mudah salah baca. Besar = lebih stabil' },
+    { k: 'ratio', label: 'Ketegasan arah', min: 1, max: 1.8, step: 0.05, fmt: v => '×' + (+v).toFixed(2), tip: 'Kecil = arah diagonal tetap dipilih. Besar = jari harus lurus ke satu arah' }
+  ];
+  const csInputs = [];
+  function buildCamSettings(box) {
+    for (const c of CS) {
+      const d = document.createElement('div'); d.className = 'cs';
+      d.innerHTML = `<div class="row"><label>${c.label}</label><input type="range" min="${c.min}" max="${c.max}" step="${c.step}"><span class="val"></span></div><small>${c.tip}</small>`;
+      const inp = d.querySelector('input'), val = d.querySelector('.val');
+      inp.value = settings[c.k]; val.textContent = c.fmt(settings[c.k]);
+      inp.oninput = () => { settings[c.k] = +inp.value; saveSettings(); syncCamSettings(); };
+      csInputs.push({ c, inp, val });
+      box.appendChild(d);
+    }
+    const b = document.createElement('button'); b.className = 'btn ghost tiny'; b.textContent = '↺ Kembalikan standar';
+    b.onclick = () => { Object.assign(settings, CAM_DEF); saveSettings(); syncCamSettings(); };
+    box.appendChild(b);
+  }
+  function syncCamSettings() { for (const { c, inp, val } of csInputs) { inp.value = settings[c.k]; val.textContent = c.fmt(settings[c.k]); } }
+  buildCamSettings($('csMenu'));
+  buildCamSettings($('csPause'));
+
+  function menuMsg(msg) { const m = $('menuMsg'); m.textContent = msg || ''; m.classList.toggle('hidden', !msg); }
+
+  async function enableCamera() {
+    menuMsg('');
+    if (window.isSecureContext === false || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      menuMsg('Kamera hanya bisa dipakai lewat HTTPS (atau localhost) di browser yang mendukung. Pakai mode Sentuhan/Keyboard dulu.');
+      return false;
+    }
+    toast('Menyiapkan kamera & pendeteksi jari…', 8000);
+    try {
+      if (!cam.stream) cam.stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30 } } });
+      video.srcObject = cam.stream;
+      await video.play().catch(() => {});
+    } catch (e) {
+      stopCamera(); $('toast').classList.remove('show');
+      const n = e && e.name;
+      menuMsg(n === 'NotAllowedError' || n === 'SecurityError' ? 'Izin kamera ditolak. Izinkan kamera untuk situs ini di pengaturan browser, lalu coba lagi.'
+        : n === 'NotFoundError' ? 'Tidak ada kamera yang ditemukan di perangkat ini.'
+        : 'Kamera tidak bisa dibuka (mungkin sedang dipakai aplikasi lain).');
+      return false;
+    }
+    try { await loadHandModel(); }
+    catch (e) {
+      stopCamera(); $('toast').classList.remove('show');
+      menuMsg('Pendeteksi jari gagal diunduh. Pastikan internet tersambung dan tidak ada pemblokir yang menghalangi cdn.jsdelivr.net / storage.googleapis.com.');
+      return false;
+    }
+    try { await cam.lm.setOptions({ numHands: versus ? 2 : 1 }); } catch (e) {}
+    $('toast').classList.remove('show');
+    return true;
+  }
+  function stopCamera() {
+    cam.on = false; cam.has = false;
+    $('arrow0').textContent = ''; $('arrow1').textContent = '';
+    if (cam.stream) { for (const t of cam.stream.getTracks()) t.stop(); cam.stream = null; }
+    video.srcObject = null;
+    show('camBox', false);
+  }
+
+  function handDir(h) {
+    // arah = dari pangkal telunjuk (5) ke ujung telunjuk (8); x dicerminkan seperti selfie
+    const dx = -(h[8].x - h[5].x), dy = h[8].y - h[5].y, len = Math.hypot(dx, dy);
+    if (len < 0.125 - settings.sens * 0.011) return { ext: false };
+    let d = null;
+    if (Math.abs(dx) > Math.abs(dy) * settings.ratio) d = dx > 0 ? DIRS.R : DIRS.L;
+    else if (Math.abs(dy) > Math.abs(dx) * settings.ratio) d = dy > 0 ? DIRS.D : DIRS.U;
+    return { ext: true, d };
+  }
+  function feedHand(pi, r) {
+    const st = cam.pl[pi], el = $('arrow' + pi);
+    if (!r) { el.textContent = ''; st.cand = null; return; }
+    if (!r.ext) { el.textContent = '✋'; st.cand = null; return; }
+    if (!r.d) return;
+    el.textContent = ARROW[r.d.k];
+    if (st.cand && st.cand.k === r.d.k) st.cnt++; else { st.cand = r.d; st.cnt = 1; }
+    if (st.cnt >= settings.confirm) turn(r.d, pi);
+  }
+  function detectHand(now) {
+    if (!cam.on || !cam.lm || video.readyState < 2 || video.currentTime === cam.lastVT) return;
+    cam.lastVT = video.currentTime;
+    cam.lastTs = Math.max(cam.lastTs + 1, now);
+    let res;
+    try { res = cam.lm.detectForVideo(video, cam.lastTs); } catch (e) { return; }
+    const hs = (res && res.landmarks) || [];
+    setHas(hs.length > 0);
+    if (!versus) { feedHand(0, hs[0] ? handDir(hs[0]) : null); return; }
+    // 2 pemain: tangan paling kiri di layar (setelah dicerminkan) = P1
+    const pts = hs.map(h => ({ h, mx: 1 - h[0].x }));
+    let asg = [null, null];
+    if (pts.length >= 2) { pts.sort((a, b) => a.mx - b.mx); asg = [pts[0], pts[pts.length - 1]]; }
+    else if (pts.length === 1) {
+      const q = pts[0], d = k => cam.lastMx[k] == null ? Infinity : Math.abs(q.mx - cam.lastMx[k]);
+      const i = (d(0) === Infinity && d(1) === Infinity) ? (q.mx < 0.5 ? 0 : 1) : (d(0) <= d(1) ? 0 : 1);
+      asg[i] = q;
+    }
+    for (let k = 0; k < 2; k++) {
+      if (asg[k]) { cam.lastMx[k] = asg[k].mx; feedHand(k, handDir(asg[k].h)); } else feedHand(k, null);
+    }
+  }
+  function setHas(v) { if (cam.has !== v) { cam.has = v; $('camBox').classList.toggle('has', v); } }
+
+  // ---------- alur game ----------
+  function setVersus(v) {
+    versus = v;
+    $('btnM1').classList.toggle('on', !v); $('btnM2').classList.toggle('on', v);
+    show('vsHelp', v);
+    $('camBox').classList.toggle('vs', v);
+    if (state === 'menu') resetGame();
+  }
+  $('btnM1').onclick = () => setVersus(false);
+  $('btnM2').onclick = () => setVersus(true);
+
+  async function startGame(withCam) {
+    initAudio();
+    if (withCam) { const ok = await enableCamera(); if (!ok) return; }
+    else stopCamera();
+    useCam = withCam; cam.on = withCam;
+    cam.pl.forEach(q => { q.cand = null; q.cnt = 0; }); cam.lastMx = [null, null];
+    $('camBox').classList.toggle('vs', versus);
+    resetGame();
+    show('menu', false); show('over', false); show('paused', false);
+    show('hud', !versus); show('hudVs', versus); show('gameBtns', true);
+    show('camBox', withCam); $('camBox').style.opacity = settings.prev ? 1 : 0;
+    state = 'play';
+    const c = $('count'); let n = 3;
+    show('count', true); c.textContent = n; c.classList.remove('go'); void c.offsetWidth; c.classList.add('go');
+    const iv = setInterval(() => {
+      n--;
+      if (state === 'menu' || state === 'over') { clearInterval(iv); show('count', false); return; }
+      if (n <= 0) { clearInterval(iv); show('count', false); return; }
+      c.textContent = n; c.classList.remove('go'); void c.offsetWidth; c.classList.add('go');
+    }, 300);
+    if (withCam) toast(versus ? 'Tunjukkan 2 tangan: kiri = P1, kanan = P2. Arahkan telunjuk ke arah belok!' : 'Arahkan telunjuk ke arah yang diinginkan. Pastikan tangan terlihat di kamera!', 3800);
+    else toast(versus ? 'P1: geser sisi kiri / WASD · P2: geser sisi kanan / panah' : 'Geser jari / pakai panah atau WASD untuk belok.', 3200);
+  }
+
+  function gameOver() {
+    state = 'over';
+    stopCamera();
+    if (versus) {
+      $('overTitle').textContent = winner === 'tie' ? 'SERI!' : `🏆 P${winner + 1} MENANG`;
+      $('overScore').textContent = `${players[0].score} : ${players[1].score}`;
+      $('overInfo').textContent = `Skor P1 : P2 · panjang ${players[0].apples + 4} / ${players[1].apples + 4}`;
+    } else {
+      const p = players[0], nb = p.score > best;
+      if (nb) { best = p.score; store.set('best', best); }
+      $('overTitle').textContent = nb && p.score > 0 ? 'REKOR BARU!' : 'GAME OVER';
+      $('overScore').textContent = p.score;
+      $('overInfo').textContent = `${p.apples} apel · terbaik ${best}`;
+    }
+    show('hud', false); show('hudVs', false); show('gameBtns', false); show('over', true);
+  }
+  function toMenu() {
+    stopCamera(); state = 'menu';
+    show('paused', false); show('over', false); show('hud', false); show('hudVs', false); show('gameBtns', false); show('count', false); show('menu', true);
+    resetGame();
+  }
+  function pauseGame() { if (state !== 'play') return; state = 'paused'; show('csPauseBox', useCam); show('paused', true); }
+  function resumeGame() { if (state !== 'paused') return; show('paused', false); state = 'play'; acc = Math.min(acc, 0); }
+
+  $('btnCam').onclick = () => startGame(true);
+  $('btnTouch').onclick = () => startGame(false);
+  $('btnAgainCam').onclick = () => startGame(true);
+  $('btnAgainTouch').onclick = () => startGame(false);
+  $('btnHome').onclick = toMenu;
+  $('btnQuit').onclick = toMenu;
+  $('btnPause').onclick = pauseGame;
+  $('btnResume').onclick = resumeGame;
+  const muteLabel = () => { $('btnMute').textContent = settings.mute ? '🔇' : '🔊'; };
+  $('btnMute').onclick = () => { settings.mute = !settings.mute; if (master) master.gain.value = settings.mute ? 0 : 0.5; saveSettings(); muteLabel(); };
+  muteLabel();
+  $('oWrap').checked = settings.wrap; $('oPrev').checked = settings.prev;
+  $('oWrap').onchange = e => { settings.wrap = e.target.checked; saveSettings(); };
+  $('oPrev').onchange = e => { settings.prev = e.target.checked; saveSettings(); };
+  document.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(); });
+
+  // ---------- render ----------
+  const tmpM = new THREE.Matrix4(), tmpC = new THREE.Color(), tmpP = new THREE.Vector3(), tmpS = new THREE.Vector3(), tmpQ = new THREE.Quaternion();
+  const camTarget = new THREE.Vector3(), camPos = new THREE.Vector3(), camLook = new THREE.Vector3();
+  const VIEW = new THREE.Vector3(0, 0.85, 0.53).normalize();
+
+  function resize() {
+    const w = innerWidth, h = innerHeight, asp = w / h;
+    renderer.setSize(w, h, false);
+    camera.aspect = asp; camera.updateProjectionMatrix();
+  }
+  addEventListener('resize', resize);
+
+  function segPos(p, i, a) {
+    const c = p.snake[i], q = p.prev[i] || c;
+    const dx = c.x - q.x, dy = c.y - q.y;
+    if (Math.abs(dx) > 1.5 || Math.abs(dy) > 1.5) return [c.x, c.y];
+    return [q.x + dx * a, q.y + dy * a];
+  }
+
+  function render(dt) {
+    elapsed += dt;
+    const a = (state === 'play' || state === 'paused') ? Math.max(0, Math.min(1, acc / stepMs)) : 1;
+    let n = 0, fx = 0, fz = 0, fc = 0;
+    for (const p of players) {
+      const L = p.snake.length, hd = p.head;
+      if (p.st === 'dead') { p.rT -= dt; if (p.rT <= 0 && state === 'play') { spawnSnake(p); p.st = 'alive'; p.inv = 2.5; } }
+      if (p.inv > 0) p.inv -= dt;
+      p.pulseT += dt * 14;
+      if (p.st !== 'alive' || !L) { hd.visible = false; continue; }
+      const hide = p.inv > 0 && Math.floor(elapsed * 12) % 2 === 0;
+      const pos = [];
+      for (let i = 0; i < L; i++) pos.push(segPos(p, i, a));
+      hd.visible = !hide;
+      if (!hide) {
+        for (let i = 1; i < L; i++) {
+          const f = i / L;
+          const base = 0.62 + (1 - f) * 0.3 - 0.18 * f;
+          const bump = 1 + 0.3 * Math.exp(-Math.pow(i - p.pulseT, 2) / 3);
+          const sc = (0.5 + base * 0.5) * bump * 0.95;
+          tmpP.set(wx(pos[i][0]), 0.5, wz(pos[i][1]));
+          tmpS.setScalar(sc * 1.15);
+          tmpM.compose(tmpP, tmpQ.identity(), tmpS);
+          bodyMesh.setMatrixAt(n, tmpM);
+          tmpC.setHSL(p.hue + 0.1 * f, 0.78, 0.5 + (i % 2 ? 0.04 : -0.02));
+          bodyMesh.setColorAt(n, tmpC); n++;
+          if (i + 1 < L) {
+            const dx = pos[i][0] - pos[i + 1][0], dy = pos[i][1] - pos[i + 1][1];
+            if (Math.abs(dx) < 1.5 && Math.abs(dy) < 1.5) {
+              tmpP.set(wx((pos[i][0] + pos[i + 1][0]) / 2), 0.5, wz((pos[i][1] + pos[i + 1][1]) / 2));
+              tmpS.setScalar(sc * 1.05);
+              tmpM.compose(tmpP, tmpQ.identity(), tmpS);
+              bodyMesh.setMatrixAt(n, tmpM);
+              bodyMesh.setColorAt(n, tmpC); n++;
+            }
+          }
+        }
+      }
+      hd.position.set(wx(pos[0][0]), 0.55, wz(pos[0][1]));
+      const target = Math.atan2(p.dir.x, p.dir.y);
+      let d = target - p.headAng; d = Math.atan2(Math.sin(d), Math.cos(d));
+      p.headAng += d * Math.min(1, dt * 16);
+      hd.rotation.y = p.headAng;
+      hd.scale.setScalar(1 + (p.pulseT < 3 ? 0.18 * Math.exp(-p.pulseT) : 0));
+      hd.userData.tongue.scale.z = 0.6 + 0.4 * Math.max(0, Math.sin(elapsed * 14));
+      hd.userData.mat.color.set(p.headCol);
+      fx += wx(pos[0][0]); fz += wz(pos[0][1]); fc++;
+    }
+    bodyMesh.count = n;
+    bodyMesh.instanceMatrix.needsUpdate = true;
+    if (bodyMesh.instanceColor) bodyMesh.instanceColor.needsUpdate = true;
+
+    // makanan
+    if (foodCell) {
+      food.visible = true;
+      food.position.set(wx(foodCell.x), 0.5 + Math.sin(elapsed * 3.2) * 0.08, wz(foodCell.y));
+      food.rotation.y = elapsed * 1.5;
+      food.scale.setScalar(1 + 0.06 * Math.sin(elapsed * 6));
+    } else food.visible = false;
+    let goldTxt = '';
+    if (goldCell) {
+      gold.position.set(wx(goldCell.x), 0.55 + Math.sin(elapsed * 4) * 0.1, wz(goldCell.y));
+      gem.rotation.y = elapsed * 2.5; gem.rotation.x = elapsed * 1.3; ring.rotation.z = elapsed * 3;
+      const left = Math.max(0, goldT), blink = left < 2.5 && Math.floor(elapsed * 8) % 2 === 0;
+      gold.visible = !blink;
+      goldTxt = '⭐ ' + left.toFixed(1) + 's';
+    } else gold.visible = false;
+    $(versus ? 'goldMid' : 'goldHud').textContent = goldTxt;
+
+    // partikel
+    for (const q of PART) {
+      if (q.life <= 0) continue;
+      q.life -= dt;
+      if (q.life <= 0) { q.m.visible = false; continue; }
+      q.vy -= 14 * dt;
+      q.m.position.x += q.vx * dt; q.m.position.y = Math.max(0.05, q.m.position.y + q.vy * dt); q.m.position.z += q.vz * dt;
+      q.m.material.opacity = Math.min(1, q.life / q.max * 1.6);
+    }
+
+    // kamera: mengikuti kepala sedikit + getar saat tabrakan
+    const asp = camera.aspect, dist = Math.max(31, 27 / asp);
+    const hx = fc ? fx / fc : 0, hz = fc ? fz / fc : 0;
+    camTarget.set(hx * 0.18, 0, hz * 0.18 + 1.2);
+    camPos.copy(camTarget).addScaledVector(VIEW, dist);
+    shake = Math.max(0, shake - dt * 1.4);
+    if (shake > 0) { camPos.x += (Math.random() - 0.5) * shake * 0.9; camPos.y += (Math.random() - 0.5) * shake * 0.6; }
+    camera.position.lerp(camPos, Math.min(1, dt * 5));
+    camLook.lerp(camTarget, Math.min(1, dt * 5));
+    camera.lookAt(camLook);
+    renderer.render(scene, camera);
+  }
+
+  // ---------- loop ----------
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.05, Math.max(0, (now - last) / 1000));
+    last = now;
+    if (state === 'play') {
+      detectHand(now);
+      acc += dt * 1000;
+      let guard = 0;
+      while (acc >= stepMs && state === 'play' && guard++ < 4) { acc -= stepMs; tick(); }
+      if (goldCell) { goldT -= dt; if (goldT <= 0) { goldCell = null; sfx.miss(); } }
+    } else if (state === 'dying') {
+      dieT -= dt;
+      if (dieT <= 0) gameOver();
+    }
+    render(dt);
+    requestAnimationFrame(frame);
+  }
+
+  resize();
+  resetGame();
+  camera.position.set(0, 26, 16); camLook.set(0, 0, 1.2);
+  $('bestHud').textContent = 'TERBAIK ' + best;
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

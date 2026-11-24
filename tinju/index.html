@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#1a0a10">
+<title>Tinju Sensor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bangers&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="../shared/menu.css">
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div class="hud hidden" id="hud">
+  <div class="top solo"><div class="ename" id="ename">PEMULA</div><div class="round" id="roundTxt">RONDE 1</div><div class="bar ghost" id="ehp"><i class="g" id="ehpG"></i><i id="ehpF"></i></div></div>
+  <div class="scoreBox solo"><div class="score" id="score">0</div><div class="combo" id="combo"></div></div>
+  <div class="cue solo hidden" id="cue"><div class="big" id="cueTxt"></div><div class="chips"><span class="chip" id="cB">🛡 TANGKIS</span><span class="chip" id="cD">⬇ RUNDUK</span><span class="chip" id="cL">⬅ MIRING KIRI</span><span class="chip" id="cR">MIRING KANAN ➡</span></div></div>
+  <div class="msg" id="msg"></div><div class="flash" id="flash"></div><div class="flash blue" id="flashB"></div><div class="count hidden" id="count"></div>
+  <div class="left solo"><div class="lbl">NYAWA</div><div class="bar" id="php"><i id="phpF"></i></div><div class="lbl">TENAGA</div><div class="bar sm" id="stam"><i id="stamF"></i></div><div class="lbl" id="supLbl">SUPER</div><div class="bar sm" id="sup"><i id="supF"></i></div></div>
+  <div id="det" class="solo"><span id="dG">🛡 TANGKIS</span><span id="dL">⬅ KIRI</span><span id="dR">KANAN ➡</span><span id="dD">⬇ RUNDUK</span></div>
+  <div class="vtop duo"><div class="vside p1"><div class="vn">P1</div><div class="bar"><i id="vhp1"></i></div><div class="pips" id="pips1"></div></div><div class="vmid"><div class="vr" id="vround">RONDE 1</div><div class="vt" id="vtime">60</div></div><div class="vside p2"><div class="vn">P2</div><div class="bar"><i id="vhp2"></i></div><div class="pips" id="pips2"></div></div></div>
+  <div class="vb l duo"><div class="lbl">TENAGA</div><div class="bar"><i class="s" id="vst1"></i></div><div class="lbl" id="vsl1">SUPER</div><div class="bar"><i class="u" id="vsu1"></i></div><div class="dets"><span id="v1g">🛡</span><span id="v1l">↔ MIRING</span><span id="v1d">⬇ RUNDUK</span></div></div>
+  <div class="vb r duo"><div class="lbl">TENAGA</div><div class="bar"><i class="s" id="vst2"></i></div><div class="lbl" id="vsl2">SUPER</div><div class="bar"><i class="u" id="vsu2"></i></div><div class="dets"><span id="v2g">🛡</span><span id="v2l">↔ MIRING</span><span id="v2d">⬇ RUNDUK</span></div></div>
+</div>
+<div id="camBox" class="hidden"><video id="camVideo" playsinline muted autoplay></video><canvas id="skel" width="320" height="240"></canvas></div>
+<div id="calibBox" class="hidden"><div class="t">KALIBRASI</div><div class="s" id="calS"></div><div class="b2"><i id="calBar"></i></div><div class="s" id="calS2" style="margin-top:10px"></div><div class="b2 second" id="calBox2"><i id="calBar2"></i></div></div>
+<div id="ctl2" class="hidden"><button data-k="jab">🥊 JAB</button><button data-k="hook">🥊 HOOK</button><button data-k="upper">🥊 UPPER</button><button data-k="guard">🛡 TANGKIS</button><button data-k="leanL">↔ MIRING</button><button data-k="duck">⬇ RUNDUK</button></div>
+<div id="ctl" class="hidden"><button data-k="jab">🥊 JAB</button><button data-k="hook">🥊 HOOK</button><button data-k="upper">🥊 UPPER</button><button data-k="guard">🛡 TANGKIS (tahan)</button><button data-k="leanL">⬅ MIRING</button><button data-k="duck">⬇ RUNDUK</button><button data-k="leanR">MIRING ➡</button></div>
+<div class="btns hidden" id="gameBtns"><button class="btn-sm hidden" id="btnCal">🎯 Kalibrasi</button><button class="btn-sm" id="btnMute">🔊</button><button class="btn-sm" id="btnPause">⏸</button></div>
+
+<div class="overlay" id="menu">
+  <h1>TINJU<small>SENSOR TUBUH</small></h1>
+  <p>Berdirilah seperti petinju! <b>Pukul</b> lawanmu dengan tanganmu, <b>tangkis</b> dengan kepalan di depan wajah, dan <b>hindari</b> pukulannya dengan miring badan atau merunduk.</p>
+  <div class="tips">
+    <div class="tip"><b>🥊</b>Pukul cepat:<br>jab, hook, uppercut</div><div class="tip"><b>🛡</b>Kepalan di<br>wajah = tangkis</div><div class="tip"><b>↔️</b>Miring / ⬇<br>= menghindar</div><div class="tip"><b>⚡</b>Isi SUPER<br>untuk pukulan x3</div>
+  </div>
+  <div class="modes"><button class="btn mode on" id="btnM1">🤖 1 Player (lawan AI)</button><button class="btn mode" id="btnM2">👥 2 Player Sparring</button></div>
+  <div class="hint hidden" id="vsHelp"><b>2 Player sparring (maks. 5 ronde, menang 2 ronde):</b> berdirilah <b>berdampingan</b> di depan kamera — <b style="color:#ffb35a">P1 di kiri</b>, <b style="color:#6fc8ff">P2 di kanan</b>. Pukulanmu <b>butuh waktu sampai</b> ke lawan, jadi lawan sempat <b>menangkis</b> (kepalan di wajah), <b>miring</b>, atau <b>merunduk</b>. Jab & uppercut bisa dihindari dengan miring, hook dengan merunduk; tangkis melawan semuanya tapi lemah. Lawan yang kamu pukul meleset jadi terbuka untuk serangan balik! Tanpa kamera: P1 Z/X/C pukul · V tangkis · A miring · S runduk. P2 J/K/L pukul · M tangkis · ◀ miring · ▼ runduk.</div>
+  <div class="modes" id="diffBox"><button class="btn mode" data-d="0">😊 Mudah</button><button class="btn mode on" data-d="1">😎 Normal</button><button class="btn mode" data-d="2">🔥 Sulit</button></div>
+  <button class="btn cam" id="btnCam">📷 Main pakai Kamera (Tubuh)</button>
+  <button class="btn" id="btnKey">⌨️ Main pakai Keyboard / Tombol</button>
+  <details class="camset"><summary>⚙️ Pengaturan</summary><div id="csMenu"></div></details>
+  <div class="hint"><b>Lawan memberi tanda sebelum menyerang</b> — lihat petunjuk merah di atas: tiap serangan punya cara menghindar yang tepat (hook kiri: runduk / miring kanan / tangkis, dan seterusnya). Menghindar dengan tepat membuka lawan untuk serangan balik <b>2x lebih sakit</b>. Berdirilah ±2 meter dari kamera dengan kepala, bahu, dan kedua tangan terlihat. Keyboard: Z/X/C pukul, Spasi tangkis, A/D miring, S runduk.</div>
+  <div class="warn hidden" id="menuMsg"></div>
+  <a class="btn ghost" href="../index.html">🎮 Daftar Game</a>
+</div>
+<div class="overlay hidden" id="over">
+  <h2 id="overTitle">KO!</h2><div class="big" id="overScore">0</div><p id="overInfo"></p>
+  <button class="btn cam" id="btnAgainCam">📷 Main Lagi (Kamera)</button><button class="btn" id="btnAgainKey">⌨️ Main Lagi (Keyboard)</button>
+  <button class="btn ghost" id="btnHome">🏠 Menu</button><a class="btn ghost" href="../index.html">🎮 Daftar Game</a>
+</div>
+<div class="overlay hidden" id="paused">
+  <h2>JEDA</h2><details class="camset" id="csPauseBox"><summary>⚙️ Pengaturan</summary><div id="csPause"></div></details>
+  <button class="btn" id="btnResume">▶ Lanjut</button><button class="btn ghost" id="btnQuit">🏠 Menu</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>if (typeof THREE === 'undefined') { var mm = document.getElementById('menuMsg'); mm.textContent = 'Gagal memuat Three.js (butuh internet). Periksa koneksi lalu muat ulang halaman.'; mm.classList.remove('hidden'); }</script>
+<script src="../shared/camguide.js"></script>
+<script src="js/00-dasar.js"></script>
+<script src="js/01-data-pertarungan.js"></script>
+<script src="js/02-three-js.js"></script>
+<script src="js/03-petinju-lawan-model.js"></script>
+<script src="js/04-pose-lawan.js"></script>
+<script src="js/05-sarung-tinju-pemain.js"></script>
+<script src="js/06-audio.js"></script>
+<script src="js/07-pemain-memukul.js"></script>
+<script src="js/08-lawan-menyerang.js"></script>
+<script src="js/09-sarung-pemain-animasi.js"></script>
+<script src="js/10-mode-2-player.js"></script>
+<script src="js/11-hud.js"></script>
+<script src="js/12-input-keyboard-tombol.js"></script>
+<script src="js/13-input-kamera-pose.js"></script>
+<script src="js/14-pengaturan.js"></script>
+<script src="js/15-alur-game.js"></script>
+<script src="js/16-loop.js"></script>
+<script src="../shared/menu.js"></script>
+<script>/* hitung "dimainkan" global (sekali per tab per game) */(function(){try{var s=location.pathname.split('/').filter(Boolean);if(s.length&&/\.html?$/i.test(s[s.length-1]))s.pop();var g=s.pop();if(!g)return;var k='played_'+g;if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1');fetch('../api/hit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:g+'/'}),keepalive:true}).catch(function(){})}catch(e){}})();</script>
+</body>
+</html>

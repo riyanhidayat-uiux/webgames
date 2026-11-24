@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0a0716">
+<title>Boling 3D Sensor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bangers&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="../shared/menu.css">
+</head>
+<body>
+<canvas id="gl"></canvas>
+<canvas id="fx"></canvas>
+<div id="dim"></div>
+<div id="camBox" class="hidden"><video id="bgVideo" playsinline muted autoplay></video><canvas id="skel" width="240" height="180"></canvas><div class="spdbar"><i id="spdFill"></i><b id="spdThr"></b></div><div class="camlab" id="camLab"></div></div>
+<div class="hud hidden" id="hud"><div id="board"></div><div class="info" id="info"></div></div>
+<div class="power hidden" id="power"><div class="pbar"><i id="powerFill"></i></div><span>TENAGA</span></div>
+<div class="help hidden" id="help"></div>
+<div class="msg" id="msg"></div>
+<div id="calibBox" class="hidden"><div class="t">KALIBRASI</div><div class="s" id="calS"></div><div class="b2"><i id="calBar"></i></div></div>
+<div class="btns hidden" id="gameBtns"><button class="btn-sm hidden" id="btnCal">🎯 Kalibrasi</button><button class="btn-sm" id="btnMute">🔊</button><button class="btn-sm" id="btnPause">⏸</button></div>
+
+<div class="overlay" id="menu">
+  <h1>BOLING 3D<small>SENSOR TUBUH</small></h1>
+  <p>Ayunkan lengan seperti melempar bola boling! <b>Kecepatan ayunan = tenaga</b>, geser badan untuk memilih posisi, dan arah ayunan membuat bola melengkung.</p>
+  <div class="tips"><div class="tip"><b>↔️</b>Geser badan<br>= posisi</div><div class="tip"><b>💪</b>Ayun lengan<br>= lempar</div><div class="tip"><b>🌀</b>Ayun miring<br>= lengkung</div><div class="tip"><b>🎳</b>10 frame<br>strike &amp; spare</div></div>
+  <div class="balls" id="ballBox"></div>
+  <div class="modes"><button class="btn mode on" id="btnM1">👤 1 Player</button><button class="btn mode" id="btnM2">👥 2 Player (gantian)</button></div>
+  <div class="hint hidden" id="vsHelp"><b>2 Player:</b> bergantian per frame di depan kamera yang sama. Giliran akan diumumkan di layar.</div>
+  <button class="btn" id="btnCam">📷 Main Pakai Kamera</button>
+  <button class="btn alt" id="btnDemo">⌨️ Main Tanpa Kamera</button>
+  <details class="camset"><summary>⚙️ Pengaturan</summary><div id="csMenu"></div></details>
+  <div class="hint">Berdirilah ±2 meter dari kamera sampai <b>kepala, bahu, dan kedua lengan</b> terlihat. Ayunan harus <b>cepat dan tegas</b>. Tanpa kamera: ←/→ geser, Q/E arah, Z/X lengkung, tahan <b>Spasi</b> lalu lepas untuk melempar (atau geser/swipe ke atas di layar).</div>
+  <div class="warn hidden" id="menuMsg"></div>
+  <a class="btn ghost" href="../index.html">🎮 Daftar Game</a>
+</div>
+<div class="overlay hidden" id="over">
+  <h2 id="overTitle">PERMAINAN SELESAI</h2><div class="big2" id="overScore">0</div><p id="overInfo"></p><div id="overBoard"></div>
+  <button class="btn" id="btnAgainCam">📷 Main Lagi (Kamera)</button><button class="btn alt" id="btnAgainDemo">⌨️ Lagi (Tanpa Kamera)</button><button class="btn ghost" id="btnHome">🏠 Menu</button><a class="btn ghost" href="../index.html">🎮 Daftar Game</a>
+</div>
+<div class="overlay hidden" id="paused"><h2>JEDA</h2><details class="camset"><summary>⚙️ Pengaturan</summary><div id="csPause"></div></details><button class="btn" id="btnResume">▶ Lanjut</button><button class="btn ghost" id="btnQuit">🏠 Menu</button></div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>if (typeof THREE === 'undefined') { var mm = document.getElementById('menuMsg'); mm.textContent = 'Gagal memuat Three.js (butuh internet). Periksa koneksi lalu muat ulang halaman.'; mm.classList.remove('hidden'); }</script>
+<script src="../shared/camguide.js"></script>
+<script src="js/00-dasar.js"></script>
+<script src="js/01-papan-skor.js"></script>
+<script src="js/02-scene-lintasan.js"></script>
+<script src="js/03-pin-bola-fisika.js"></script>
+<script src="js/04-audio.js"></script>
+<script src="js/05-alur-game.js"></script>
+<script src="js/06-kontrol-tanpa-kamera.js"></script>
+<script src="js/07-kamera-pose.js"></script>
+<script src="js/08-menu-pengaturan.js"></script>
+<script src="js/09-render-loop.js"></script>
+<script src="../shared/menu.js"></script>
+<script>/* hitung "dimainkan" global (sekali per tab per game) */(function(){try{var s=location.pathname.split('/').filter(Boolean);if(s.length&&/\.html?$/i.test(s[s.length-1]))s.pop();var g=s.pop();if(!g)return;var k='played_'+g;if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1');fetch('../api/hit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:g+'/'}),keepalive:true}).catch(function(){})}catch(e){}})();</script>
+</body>
+</html>

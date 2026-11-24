@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#1a0f08">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Buah Ninja Sensor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bangers&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#140b05;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#fff}
+  canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+  .hud{position:fixed;top:0;left:0;right:0;padding:calc(env(safe-area-inset-top) + 10px) 16px 0;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;font-family:Bangers,Impact,"Arial Black",sans-serif}
+  .score{font-size:46px;line-height:1;color:#ffd23f;text-shadow:0 3px 0 #7a3b00,0 0 14px rgba(255,180,0,.45);letter-spacing:1px}
+  .best{font-size:16px;color:#f5deb3;opacity:.85;margin-top:3px;letter-spacing:1px}
+  .lives{font-size:34px;letter-spacing:2px;line-height:1}
+  .lives span{display:inline-block;color:#ff3b30;text-shadow:0 2px 0 #5a0000;transition:transform .25s,color .25s}
+  .lives span.lost{color:rgba(255,255,255,.18);text-shadow:none;transform:scale(.8)}
+  .btns{position:fixed;right:12px;bottom:calc(env(safe-area-inset-bottom) + 12px);display:flex;gap:8px;pointer-events:none}
+  .btn-sm{pointer-events:auto;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:999px;padding:9px 14px;font-size:14px;font-family:inherit}
+  .btn-sm:active{background:rgba(255,255,255,.2)}
+  .btn-sm.on{background:rgba(90,230,130,.4);border-color:#7dff9a;box-shadow:0 0 12px rgba(125,255,154,.5)}
+  .overlay{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;background:radial-gradient(ellipse at center,rgba(20,10,4,.5),rgba(10,5,2,.9));gap:14px;overflow:auto}
+  .hidden{display:none!important}
+  h1{font-family:Bangers,Impact,"Arial Black",sans-serif;font-weight:400;font-size:clamp(52px,15vw,104px);margin:0 0 6px;line-height:.88;color:#ffd23f;text-shadow:0 5px 0 #a33a00,0 12px 26px rgba(0,0,0,.6);letter-spacing:2px;transform:rotate(-4deg)}
+  h1 small{display:block;font-size:.42em;color:#7fff6a;text-shadow:0 3px 0 #1f5a00;letter-spacing:3px}
+  h2{font-family:Bangers,Impact,"Arial Black",sans-serif;font-weight:400;font-size:56px;margin:0;color:#ff5a3c;text-shadow:0 4px 0 #5a0d00;letter-spacing:2px}
+  .big{font-family:Bangers,Impact,sans-serif;font-size:72px;color:#ffd23f;text-shadow:0 4px 0 #7a3b00;line-height:1}
+  p{max-width:400px;margin:0;color:#f3e3c8;line-height:1.45;font-size:15px}
+  .btn{font-family:Bangers,Impact,"Arial Black",sans-serif;font-size:26px;letter-spacing:1px;padding:14px 26px;border:0;border-radius:16px;color:#2a1200;background:linear-gradient(#ffe066,#ffb000);box-shadow:0 5px 0 #a35f00,0 10px 20px rgba(0,0,0,.4);min-width:250px;cursor:pointer}
+  .btn:active{transform:translateY(3px);box-shadow:0 2px 0 #a35f00}
+  .btn.alt{background:linear-gradient(#b5ffbc,#3fcf5a);box-shadow:0 5px 0 #1d7a2e,0 10px 20px rgba(0,0,0,.4);color:#05300e}
+  .btn.alt:active{box-shadow:0 2px 0 #1d7a2e}
+  details{max-width:340px;width:100%;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:8px 14px;text-align:left;color:#f3e3c8;font-size:14px}
+  summary{cursor:pointer;padding:4px 0;font-weight:600}
+  .set{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:10px 0}
+  .set input[type=range]{width:150px;accent-color:#ffb000}
+  .set input[type=checkbox]{width:20px;height:20px;accent-color:#ffb000}
+  .hint{font-size:12.5px;opacity:.75;max-width:360px}
+  .warn{color:#ffb38a}
+  .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 70px);transform:translateX(-50%);background:rgba(0,0,0,.8);padding:10px 16px;border-radius:12px;font-size:14px;max-width:84%;text-align:center;transition:opacity .4s;pointer-events:none;opacity:0}
+  .toast.show{opacity:1}
+  .btn.cam{background:linear-gradient(#9fe7ff,#2fa8e8);box-shadow:0 5px 0 #145f8a,0 10px 20px rgba(0,0,0,.4);color:#02263a}
+  .btn.cam:active{box-shadow:0 2px 0 #145f8a}
+  .btn.ghost{font-size:20px;padding:10px 20px;background:rgba(255,255,255,.12);color:#f3e3c8;box-shadow:none;border:1px solid rgba(255,255,255,.25)}
+  .help{max-width:380px;width:100%;text-align:left;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:12px 16px;color:#f3e3c8;font-size:14px;line-height:1.5}
+  .help ol{margin:6px 0 0;padding-left:20px}
+  .help li{margin:4px 0}
+  .help .url{display:block;margin-top:8px;padding:8px;background:rgba(255,255,255,.08);border-radius:8px;word-break:break-all;font-family:ui-monospace,monospace;font-size:12.5px;user-select:all;-webkit-user-select:all}
+  .hud.vs{font-family:Bangers,Impact,"Arial Black",sans-serif}
+  .hud.vs .lives{font-size:24px;margin-top:4px}
+  .hud.vs .score{font-size:40px}
+  .pbox.p1 .score{color:#ff7b7b;text-shadow:0 3px 0 #7a0000,0 0 14px rgba(255,90,90,.45)}
+  .pbox.p2{text-align:right}
+  .pbox.p2 .score{color:#6fb4ff;text-shadow:0 3px 0 #00307a,0 0 14px rgba(90,160,255,.45)}
+  .pbox .pn{font-size:15px;letter-spacing:2px;opacity:.9}
+  .pbox.p1 .pn{color:#ff7b7b}.pbox.p2 .pn{color:#6fb4ff}
+  .sdTimer{font-size:26px;color:#ffd23f;text-shadow:0 2px 0 #7a3b00;padding-top:6px}
+  .timer{font-size:26px;letter-spacing:1px;color:#fff;text-shadow:0 2px 0 #000;margin-top:4px}
+  .timer.low{color:#ff5a3c;animation:tlow .5s ease-in-out infinite alternate}
+  @keyframes tlow{to{transform:scale(1.18)}}
+  .chillBadge{margin-top:6px;font-size:18px;letter-spacing:1px;color:#9dffb0;text-shadow:0 2px 0 #0d4a1c;text-align:right}
+  .modes{display:flex;gap:8px}
+  .btn.mode{font-size:18px;padding:8px 16px;min-width:0;background:rgba(255,255,255,.12);color:#f3e3c8;box-shadow:none;border:1px solid rgba(255,255,255,.25)}
+  .btn.mode.on{background:linear-gradient(#ffe066,#ffb000);color:#2a1200;border-color:#ffb000}
+  .fbar{height:8px;width:130px;border-radius:6px;background:rgba(255,255,255,.16);margin-top:6px;overflow:hidden;border:1px solid rgba(255,255,255,.18)}
+  .fbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffd23f,#ff8a1f);transition:width .2s}
+  .fbar.on{box-shadow:0 0 14px #ff8a1f,0 0 28px rgba(255,90,20,.7);border-color:#ffd23f}
+  .fbar.on i{background:linear-gradient(90deg,#fff6a0,#ffb000,#ff3b30,#ffb000,#fff6a0);background-size:200% 100%;animation:fv .6s linear infinite;transition:none}
+  @keyframes fv{to{background-position:200% 0}}
+  .pbox.p2 .fbar{margin-left:auto}
+  .lives span.gain{animation:gain .7s ease-out}
+  @keyframes gain{0%{transform:scale(2.6) rotate(-12deg);filter:brightness(2.4)}60%{transform:scale(.9)}100%{transform:scale(1);filter:none}}
+  #camVideo{position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;left:0;top:0}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<video id="camVideo" playsinline muted autoplay></video>
+
+<div class="hud hidden" id="hud">
+  <div>
+    <div class="score" id="score">0</div>
+    <div class="best" id="bestHud">TERBAIK 0</div>
+    <div class="timer" id="timerS"></div>
+    <div class="fbar" id="fbS"><i></i></div>
+  </div>
+  <div><div class="lives" id="lives"><span>❤</span><span>❤</span><span>❤</span><span>❤</span><span>❤</span></div><div class="chillBadge hidden" id="chillBadge"></div></div>
+</div>
+<div class="hud vs hidden" id="hudVs">
+  <div class="pbox p1"><div class="pn">P1 ●</div><div class="score" id="vs1">0</div><div class="lives" id="vl1"></div><div class="fbar" id="fbV1"><i></i></div></div>
+  <div class="sdTimer" id="sdTimer"></div>
+  <div class="pbox p2"><div class="pn">● P2</div><div class="score" id="vs2">0</div><div class="lives" id="vl2"></div><div class="fbar" id="fbV2"><i></i></div></div>
+</div>
+<div class="btns hidden" id="gameBtns">
+  <button class="btn-sm" id="btnCal">🎯 Kalibrasi</button>
+  <button class="btn-sm" id="btnInf" title="Nyawa tak terbatas">♾️ Nyawa</button>
+  <button class="btn-sm" id="btnMute">🔊</button>
+  <button class="btn-sm" id="btnPause">⏸</button>
+</div>
+
+<div class="overlay" id="menu">
+  <h1>BUAH NINJA<small>SENSOR</small></h1>
+  <p>Arahkan <b>jari telunjuk</b> ke kamera depan dan <b>sabetkan dengan cepat</b> untuk menebas buah. Hindari bom 💣 dan jangan biarkan 5 buah jatuh.</p>
+  <div class="hint">🧸 Skuisi (22 jenis mainan empuk) ikut terbang selain buah · ❄️ Buah beku = waktu melambat 3 dtk · 💖 Buah hati = +1 ❤ · Isi bar 🔥 FEVER = skor x2 &amp; bom hilang 8 dtk</div>
+  <div class="modes" id="chillBox"><button class="btn mode on" id="btnTimed">⏱️ Waktu: 5 MENIT</button><button class="btn mode" id="btnChill">🌿 Mode Santai: MATI</button></div>
+  <div class="hint hidden" id="chillHelp"><b>Mode Santai:</b> tanpa nyawa — buah jatuh tidak membuatmu kalah, dan bom hanya −10 poin. Main sepuasnya, lalu tekan ⏸ → <b>Selesai</b> untuk menyimpan skor. Di 2 Player, yang skornya tertinggi saat Selesai menang.</div>
+  <div class="modes"><button class="btn mode on" id="btnM1">👤 1 Player</button><button class="btn mode" id="btnM2">👥 2 Player</button></div>
+  <div class="hint hidden" id="vsHelp"><b>2 Player:</b> layar dibagi dua — <b style="color:#ff7b7b">P1 kiri</b>, <b style="color:#6fb4ff">P2 kanan</b>, masing-masing 5 ❤. Buah jatuh di zonamu = −1 ❤. Bom 💣 ditebas = −10 poin & −1 ❤. ⭐ di tengah boleh direbut siapa saja (+5). Combo 5 buah mengirim bom ke zona lawan. Kamera: tunjukkan 2 jari (satu per pemain). Sentuhan: tiap pemain pakai jarinya di sisi masing-masing.</div>
+  <button class="btn cam" id="btnCam">📷 Main pakai Kamera (Jari)</button>
+  <button class="btn alt" id="btnSensor">🎮 Main pakai Sensor Miring</button>
+  <button class="btn" id="btnTouch">👆 Main pakai Sentuhan</button>
+  <details>
+    <summary>⚙️ Pengaturan</summary>
+    <div class="set"><label for="sCam">Jangkauan jari (kamera)</label><input type="range" id="sCam" min="0.5" max="1" step="0.05"></div>
+    <div class="set"><label for="sPrev">Tampilkan pratinjau kamera</label><input type="checkbox" id="sPrev"></div>
+    <div class="set"><label for="sSens">Kepekaan miring</label><input type="range" id="sSens" min="0.5" max="2.5" step="0.1"></div>
+    <div class="set"><label for="sFlick">Kepekaan kibasan</label><input type="range" id="sFlick" min="0.4" max="2" step="0.1"></div>
+    <div class="set"><label for="sInv">Balik arah atas/bawah</label><input type="checkbox" id="sInv"></div>
+    <div class="hint">Mode kamera: makin kecil jangkauan, makin sedikit jari perlu digerakkan. Mode sensor miring: saat mulai, posisi HP kamu dijadikan titik tengah. Tekan 🎯 Kalibrasi kapan saja untuk mengatur ulang.</div>
+  </details>
+  <a class="btn ghost" id="linkHub" href="../index.html" style="text-decoration:none;min-width:0">🎮 Daftar Game</a>
+  <div class="hint warn hidden" id="secureWarn">⚠️ Halaman ini tidak dibuka lewat HTTPS, jadi kamera dan sensor kemungkinan diblokir browser. Mode sentuhan tetap bisa dipakai.</div>
+</div>
+
+<div class="overlay hidden" id="over">
+  <h2 id="overTitle">GAME OVER</h2>
+  <div class="big" id="overScore">0</div>
+  <p id="overBest">Skor terbaik: 0</p>
+  <button class="btn cam" id="btnAgainCam">📷 Main Lagi (Kamera)</button>
+  <button class="btn alt" id="btnAgainSensor">🎮 Main Lagi (Sensor Miring)</button>
+  <button class="btn ghost" id="btnAgainTouch">👆 Main Lagi (Sentuhan)</button>
+  <button class="btn ghost" id="btnHome">🏠 Kembali ke Home</button>
+  <a class="btn ghost" href="../index.html" style="text-decoration:none;min-width:0">🎮 Daftar Game</a>
+</div>
+
+<div class="overlay hidden" id="camHelp">
+  <h2 style="font-size:42px;color:#9fe7ff;text-shadow:0 4px 0 #145f8a">KAMERA DITOLAK</h2>
+  <p id="camHelpMsg"></p>
+  <div class="help" id="camHelpSteps"></div>
+  <button class="btn cam" id="btnCamRetry">🔁 Coba Lagi</button>
+  <button class="btn" id="btnCamTouch">👆 Main pakai Sentuhan</button>
+  <button class="btn ghost" id="btnCamMenu">🏠 Menu</button>
+</div>
+
+<div class="overlay hidden" id="paused">
+  <h2 style="color:#ffd23f;text-shadow:0 4px 0 #7a3b00">JEDA</h2>
+  <button class="btn" id="btnFinish">🏁 Selesai (simpan skor)</button>
+  <button class="btn alt" id="btnResume">▶ Lanjut</button>
+  <button class="btn" id="btnQuit">🏠 Menu</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const cv = $('c'), ctx = cv.getContext('2d');
+
+  // ---------- storage ----------
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem('bns_' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem('bns_' + k, JSON.stringify(v)); } catch (e) {} }
+  };
+  const settings = Object.assign({ sens: 1.2, flick: 1, invY: false, mute: false, camRange: 0.75, camPreview: true, timed: true }, store.get('settings', {}));
+  const saveSettings = () => store.set('settings', settings);
+
+  // ---------- layout ----------
+  let W = 0, H = 0, DPR = 1, S = 1;
+  const bg = document.createElement('canvas'), bctx = bg.getContext('2d');
+  const imgCache = new Map();
+
+  function mulberry(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+  function resize() {
+    DPR = Math.min(2, window.devicePixelRatio || 1);
+    W = window.innerWidth; H = window.innerHeight;
+    S = Math.max(0.75, Math.min(1.6, Math.min(W, H) / 400));
+    cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    bg.width = cv.width; bg.height = cv.height;
+    bctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    paintBg();
+    imgCache.clear();
+  }
+
+  function paintBg() {
+    const g = bctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, '#5f3819'); g.addColorStop(1, '#2b1607');
+    bctx.fillStyle = g; bctx.fillRect(0, 0, W, H);
+    const pw = Math.max(70, W / 5);
+    const rnd = mulberry(7);
+    for (let x = 0; x < W + pw; x += pw) {
+      bctx.fillStyle = `rgba(0,0,0,${0.04 + rnd() * 0.14})`;
+      bctx.fillRect(x, 0, pw, H);
+      bctx.lineWidth = 1;
+      for (let i = 0; i < 10; i++) {
+        bctx.strokeStyle = `rgba(255,215,160,${0.03 + rnd() * 0.05})`;
+        const gx = x + rnd() * pw, amp = 2 + rnd() * 5, ph = rnd() * 10;
+        bctx.beginPath(); bctx.moveTo(gx, 0);
+        for (let y = 0; y <= H + 40; y += 30) bctx.lineTo(gx + Math.sin(y * 0.012 + ph) * amp, y);
+        bctx.stroke();
+      }
+      if (rnd() < 0.6) {
+        const ky = rnd() * H;
+        bctx.strokeStyle = 'rgba(0,0,0,0.16)';
+        for (let k = 1; k < 4; k++) { bctx.beginPath(); bctx.ellipse(x + pw * (0.3 + rnd() * 0.4), ky, 5 * k, 13 * k, 0, 0, Math.PI * 2); bctx.stroke(); }
+      }
+      bctx.fillStyle = 'rgba(0,0,0,0.5)'; bctx.fillRect(x - 1.5, 0, 3, H);
+      bctx.fillStyle = 'rgba(255,220,170,0.06)'; bctx.fillRect(x + 1.5, 0, 1, H);
+    }
+    const v = bctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.3, W / 2, H / 2, Math.max(W, H) * 0.78);
+    v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,0.62)');
+    bctx.fillStyle = v; bctx.fillRect(0, 0, W, H);
+  }
+
+  function emojiImg(e, r) {
+    const key = e + '|' + Math.round(r);
+    let c = imgCache.get(key);
+    if (c) return c;
+    const sz = Math.ceil(r * 2.7);
+    c = document.createElement('canvas');
+    c.width = c.height = Math.ceil(sz * DPR);
+    const x = c.getContext('2d');
+    x.scale(DPR, DPR);
+    x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.font = `${Math.round(r * 2.1)}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
+    x.fillText(e, sz / 2, sz / 2 + r * 0.08);
+    c.sz = sz;
+    imgCache.set(key, c);
+    return c;
+  }
+
+  // ---------- audio ----------
+  let AC = null, master = null, noiseBuf = null;
+  function initAudio() {
+    try {
+      if (!AC) {
+        AC = new (window.AudioContext || window.webkitAudioContext)();
+        master = AC.createGain(); master.gain.value = settings.mute ? 0 : 0.5; master.connect(AC.destination);
+        const len = AC.sampleRate;
+        noiseBuf = AC.createBuffer(1, len, AC.sampleRate);
+        const d = noiseBuf.getChannelData(0);
+        for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+      }
+      if (AC.state === 'suspended') AC.resume();
+    } catch (e) { AC = null; }
+  }
+  function noise(dur, type, f0, f1, gain, q = 1) {
+    if (!AC || settings.mute) return;
+    const t = AC.currentTime;
+    const s = AC.createBufferSource(); s.buffer = noiseBuf;
+    const f = AC.createBiquadFilter(); f.type = type; f.Q.value = q;
+    f.frequency.setValueAtTime(f0, t); f.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    const g = AC.createGain();
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    s.connect(f); f.connect(g); g.connect(master); s.start(t); s.stop(t + dur + 0.05);
+  }
+  function tone(dur, f0, f1, gain, type = 'sine', delay = 0) {
+    if (!AC || settings.mute) return;
+    const t = AC.currentTime + delay;
+    const o = AC.createOscillator(); o.type = type;
+    o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    const g = AC.createGain();
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + 0.05);
+  }
+  const sfx = {
+    swoosh() { noise(0.18, 'bandpass', 500, 3200, 0.45, 1.3); },
+    splat() {
+      const v = 0.92 + Math.random() * 0.16;
+      noise(0.09, 'highpass', 2500 * v, 9000 * v, 0.5, 0.8);          // desing tajam saat bilah lewat
+      noise(0.45, 'bandpass', 7000 * v, 2400, 0.3, 3);                // ekor "shiiing" panjang ala katana
+      tone(0.55, 3400 * v, 2600 * v, 0.05, 'triangle');               // dering logam panjang
+      tone(0.4, 5100 * v, 4300 * v, 0.02, 'sine', 0.02);              // harmonik logam lebih tinggi
+      tone(0.14, 200, 55, 0.4);                                       // thump kuat
+      noise(0.13, 'lowpass', 1500, 200, 0.35);                        // hantaman basah
+    },
+    toss() { tone(0.22, 180, 380, 0.06, 'sine'); },
+    bomb() { noise(1.1, 'lowpass', 1600, 50, 1.0); tone(0.9, 110, 28, 0.8, 'triangle'); },
+    miss() { tone(0.28, 320, 110, 0.22, 'square'); },
+    squeak() { const v = 0.85 + Math.random() * 0.5; tone(0.1, 700 * v, 1500 * v, 0.12, 'sine'); tone(0.14, 1500 * v, 600 * v, 0.08, 'sine', 0.08); },
+    ice() { tone(0.45, 1800, 500, 0.16, 'sine'); tone(0.3, 2600, 900, 0.08, 'triangle', 0.05); noise(0.3, 'highpass', 5000, 9000, 0.08); },
+    heal() { tone(0.14, 520, 780, 0.2, 'triangle'); tone(0.18, 780, 1170, 0.2, 'triangle', 0.1); tone(0.26, 1170, 1560, 0.18, 'triangle', 0.2); },
+    fever() { tone(0.7, 220, 880, 0.2, 'sawtooth'); tone(0.5, 440, 1320, 0.14, 'square', 0.1); noise(0.6, 'bandpass', 800, 3500, 0.15); },
+    combo() { tone(0.12, 660, 990, 0.18, 'triangle'); tone(0.16, 990, 1480, 0.18, 'triangle', 0.09); },
+    fuse() { noise(0.05, 'highpass', 4000, 6000, 0.05); }
+  };
+  const vibrate = ms => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} };
+
+  // ---------- game data ----------
+  const FRUITS = [
+    { e: '🍉', c: '#ff3b4e', r: 44 }, { e: '🍎', c: '#fff1b8', r: 34 }, { e: '🍊', c: '#ffa21f', r: 34 },
+    { e: '🍋', c: '#fff04a', r: 32 }, { e: '🍑', c: '#ffb07a', r: 34 }, { e: '🍍', c: '#ffd84a', r: 40 },
+    { e: '🥝', c: '#8ad43b', r: 30 }, { e: '🍇', c: '#a64ae0', r: 36 }, { e: '🍓', c: '#ff2d4a', r: 29 },
+    { e: '🥭', c: '#ffb703', r: 36 }, { e: '🍐', c: '#e4f58a', r: 33 }, { e: '🥥', c: '#ffffff', r: 35 },
+    { e: '🍌', c: '#fff176', r: 34 }, { e: '🍒', c: '#e0143c', r: 28 }, { e: '🍈', c: '#c8f58a', r: 40 }, { e: '🍅', c: '#ff4d3a', r: 33 },
+    { e: '🥑', c: '#9bd04a', r: 34 }, { e: '🍏', c: '#a6e34a', r: 34 }, { e: '🌶️', c: '#ff3b2f', r: 30 }, { e: '🫐', c: '#5b6fe0', r: 28 },
+    { e: '🍆', c: '#8a4ae0', r: 34 }, { e: '🥕', c: '#ff8a1f', r: 32 }, { e: '🌽', c: '#ffe14a', r: 34 }, { e: '🍠', c: '#d0703a', r: 33 },
+    { e: '🫑', c: '#6fd04a', r: 33 }, { e: '🍄', c: '#ff6b5a', r: 31 }, { e: '🥦', c: '#6fcf4a', r: 34 }, { e: '🧅', c: '#f0d0b0', r: 32 }
+  ];
+  // skuisi: mainan empuk lucu, ukuran acak, bergoyang-goyang saat terbang
+  const SQUISH = [
+    ['🧸','#d9a066',38],['🐙','#ff8fb1',38],['🐱','#ffd9a0',36],['🐼','#e8e8e8',36],['🐰','#ffd1e0',36],['🐥','#ffe45c',32],
+    ['🦄','#e8b8ff',38],['🐸','#8fe36b',34],['🍩','#ff9fd0',36],['🍙','#ffffff',34],['🧁','#ffb3d9',34],['🐷','#ffb0c0',36],
+    ['🐻','#c68a5a',38],['🐨','#c0c0d0',36],['🐡','#ffd24a',34],['🍥','#ffc0d9',34],['🐢','#7fd47f',36],['🐶','#e8c090',36],
+    ['🦆','#ffe14a',34],['🐘','#b8c4d8',40],['🦊','#ff9a4a',36],['🐧','#9fb4d8',34]
+  ].map(([e, c, r]) => ({ e, c, r, sq: 1 }));
+  let fruits = [], halves = [], parts = [], splats = [], texts = [], misses = [], queue = [];
+  let state = 'menu', score = 0, best = store.get('best', 0), lives = 5;
+  let chill = false, missed = 0, bestC = store.get('bestChill', 0);
+  // ---- batas waktu pertandingan ----
+  const MATCH_T = 300;
+  const bests = { best: store.get('best', 0), bestChill: store.get('bestChill', 0), bestTimed: store.get('bestTimed', 0) };
+  let timeLeft = MATCH_T, timeUp = false, lastSec = -1;
+  const fmtT = t => { const s = Math.max(0, Math.ceil(t)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+  const bestKey = () => chill ? 'bestChill' : (settings.timed ? 'bestTimed' : 'best');
+  // ---- mode 2 player ----
+  let versus = false, winner = null, sudden = false, sdT = 0, vsHandicap = false, starT = 9, spawnZ = [0.7, 1.1];
+  const STAR = { e: '⭐', c: '#ffd23f', r: 36 };
+  const mkP = () => ({ score: 0, lives: 5, max: 5, missed: 0 });
+  let pl = [mkP(), mkP()];
+  const mkVc = i => ({ x: 0, y: 0, tx: 0, ty: 0, has: false, rawX: 0.5, rawY: 0.5, blade: makeBlade(380, i) });
+  let vc = [mkVc(0), mkVc(1)];
+  const PCOL = ['255,120,120', '110,170,255'];
+  // ---- buah spesial, beku, fever ----
+  const ICE = { e: '❄️', c: '#8fe3ff', r: 36 }, HEART = { e: '💖', c: '#ff6fae', r: 36 };
+  const FEVER_T = 8, FREEZE_T = 3;
+  let rings = [], freeze = [{ t: 0, a: 0 }, { t: 0, a: 0 }], fever = [{ c: 0, t: 0, a: 0 }, { c: 0, t: 0, a: 0 }];
+  const hexA = (h, a) => { const n = parseInt(h.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
+  const fidx = o => (versus && o != null) ? o : 0;
+  const frozenIdx = f => f.star ? -1 : (!versus ? 0 : (f.zone >= 0 ? f.zone : -1));
+  function award(o, n) {
+    n *= fever[fidx(o)].t > 0 ? 2 : 1;
+    if (versus && o != null) pl[o].score += n; else score += n;
+    return n;
+  }
+  function ringFx(x, y, r1, life, c, w = 6) { rings.push({ type: 'ring', x, y, r1, life, max: life, c, w }); }
+  function burst(x, y, n, cols, sp, life, extra) {
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * 6.283, v = (0.3 + Math.random()) * sp * S, l = life * (0.6 + Math.random() * 0.8);
+      parts.push(Object.assign({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: l, max: l, size: (2 + Math.random() * 4) * S, c: cols[(Math.random() * cols.length) | 0] }, extra));
+    }
+  }
+  function addCharge(o, v) {
+    const i = fidx(o), f = fever[i];
+    if (f.t > 0) return;
+    f.c = Math.min(1, f.c + v);
+    if (f.c >= 1) startFever(i);
+  }
+  function startFever(i) {
+    const f = fever[i]; f.t = FEVER_T; f.c = 1;
+    const x0 = versus ? i * W / 2 : 0, w = versus ? W / 2 : W;
+    for (let k = fruits.length - 1; k >= 0; k--) {
+      const b = fruits[k];
+      if (b.bomb && (!versus || b.zone === i)) {
+        burst(b.x, b.y, 14, ['#ffcc33', '#fff6a0'], 260, 0.5, {});
+        ringFx(b.x, b.y, b.r * 2.4, 0.35, '255,210,80', 4);
+        fruits.splice(k, 1);
+      }
+    }
+    texts.push({ x: x0 + w / 2, y: H * 0.3, s: 'FEVER x2!', sub: '8 detik · bom hilang', life: 1.8, color: '#ffb000', big: 1.7 });
+    ringFx(x0 + w / 2, H * 0.5, Math.max(w, H) * 0.85, 0.75, '255,170,40', 16);
+    ringFx(x0 + w / 2, H * 0.5, Math.max(w, H) * 0.5, 0.55, '255,240,160', 8);
+    flash = Math.max(flash, 0.35); shake = Math.max(shake, 0.5);
+    sfx.fever(); vibrate([40, 30, 80]);
+  }
+  function startFreeze(i, x, y) {
+    freeze[i].t = FREEZE_T;
+    ringFx(x, y, Math.max(W, H) * 0.6, 0.85, '140,225,255', 12);
+    ringFx(x, y, Math.max(W, H) * 0.35, 0.55, '255,255,255', 5);
+    burst(x, y, 28, ['#e6fbff', '#8fe3ff', '#bfeeff'], 440, 0.8, { shard: 1 });
+    texts.push({ x, y: y - 40 * S, s: '❄ BEKU!', sub: 'waktu melambat 3 detik', life: 1.6, color: '#9fe7ff', big: 1.4 });
+    flash = Math.max(flash, 0.22); sfx.ice(); vibrate(30);
+  }
+  function heal(o, f) {
+    if (versus && o != null) { const p = pl[o]; if (p.lives < p.max) p.lives++; } else if (lives < 5) lives++;
+    burst(f.x, f.y, 12, ['#ff6fae', '#ffd1e6', '#fff'], 280, 0.8, {});
+    for (let i = 0; i < 9; i++) {
+      const l = 1 + Math.random() * 0.6;
+      parts.push({ x: f.x + (Math.random() - 0.5) * f.r * 2, y: f.y, vx: (Math.random() - 0.5) * 90 * S, vy: -(120 + Math.random() * 200) * S, life: l, max: l, size: (18 + Math.random() * 14) * S, c: '#fff', g: '💖', ng: 1 });
+    }
+    ringFx(f.x, f.y, f.r * 3.4, 0.6, '255,111,174', 8);
+    texts.push({ x: f.x, y: f.y - f.r, s: '+1 ❤', sub: '', life: 1.3, color: '#ff7fb7', big: 1.3 });
+    sfx.heal(); vibrate(25);
+  }
+  function setBar(id, f) {
+    const el = $(id), w = Math.round(f.c * 100) + '%', on = f.t > 0;
+    if (el._w !== w) { el.querySelector('i').style.width = w; el._w = w; }
+    if (el._on !== on) { el.classList.toggle('on', on); el._on = on; }
+  }
+  function updateFeverHud() {
+    if (versus) { setBar('fbV1', fever[0]); setBar('fbV2', fever[1]); } else setBar('fbS', fever[0]);
+  }
+  let spawnT = 0.5, elapsed = 0, shake = 0, flash = 0, dieT = 0;
+  const grav = () => H * 1.2;
+  const TRAIL_MS = 150;
+
+  // ---------- blades ----------
+  function makeBlade(minSpeed, owner) { return { pts: [], prev: null, minSpeed, owner, combo: 0, comboT: 0, cx: 0, cy: 0, lastSwoosh: 0, dead: false }; }
+  let sensorBlade = makeBlade(450);
+  let camBlade = makeBlade(380);
+  const touchBlades = new Map();
+  let deadBlades = [];
+
+  function segDist(px, py, ax, ay, bx, by) {
+    const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy;
+    let t = l2 ? ((px - ax) * dx + (py - ay) * dy) / l2 : 0;
+    t = Math.max(0, Math.min(1, t));
+    const x = ax + t * dx - px, y = ay + t * dy - py;
+    return Math.sqrt(x * x + y * y);
+  }
+
+  function bladeMove(b, x, y, t) {
+    if (b.prev) {
+      const dt = Math.max(4, t - b.prev.t);
+      const d = Math.hypot(x - b.prev.x, y - b.prev.y);
+      const speed = d / dt * 1000;
+      if (state === 'play' && speed > b.minSpeed * S) trySlice(b.prev.x, b.prev.y, x, y, b);
+      if (state === 'play' && speed > b.minSpeed * S * 2.5) { b.lastSwoosh = t; }
+    }
+    b.prev = { x, y, t };
+    b.pts.push({ x, y, t });
+    if (b.pts.length > 60) b.pts.shift();
+  }
+
+  function trySlice(ax, ay, bx, by, b) {
+    const ang = Math.atan2(by - ay, bx - ax);
+    for (let i = fruits.length - 1; i >= 0; i--) {
+      const f = fruits[i];
+      if (!f || f.y > H + f.r) continue;
+      if (versus && b.owner != null && !f.star && f.zone !== b.owner) continue;
+      if (segDist(f.x, f.y, ax, ay, bx, by) < f.r * 0.95) {
+        fruits.splice(i, 1);
+        if (f.bomb) { explode(f, b); return; }
+        sliceFruit(f, ang, b);
+      }
+    }
+  }
+
+  function sliceFruit(f, ang, b) {
+    const nx = -Math.sin(ang), ny = Math.cos(ang);
+    const sp = 70 * S;
+    for (const side of [-1, 1]) {
+      halves.push({
+        x: f.x + nx * side * 2, y: f.y + ny * side * 2,
+        vx: f.vx * 0.6 + nx * side * sp + Math.cos(ang) * 50 * S,
+        vy: Math.min(f.vy * 0.4, 0) + ny * side * sp + Math.sin(ang) * 50 * S,
+        rot: f.rot, vr: f.vr + side * (1.5 + Math.random() * 2.5),
+        cut: ang - f.rot, side, e: f.e, r: f.r, c: f.t.c
+      });
+    }
+    for (let i = 0; i < 18; i++) {
+      const a = Math.random() * Math.PI * 2, s = (60 + Math.random() * 280) * S;
+      const life = 0.4 + Math.random() * 0.5;
+      parts.push({ x: f.x, y: f.y, vx: Math.cos(a) * s + Math.cos(ang) * 140 * S, vy: Math.sin(a) * s + Math.sin(ang) * 140 * S, life, max: life, size: (2 + Math.random() * 4.5) * S, c: f.t.c });
+    }
+    splats.push({ x: f.x, y: f.y, r: f.r * (0.9 + Math.random() * 0.5), c: f.t.c, life: 1, seed: (Math.random() * 1e6) | 0 });
+    if (splats.length > 25) splats.shift();
+    const o = (versus && b.owner != null) ? b.owner : undefined;
+    if (f.star) {
+      const n = award(o, 5);
+      texts.push({ x: f.x, y: f.y - f.r, s: '⭐ +' + n, sub: '', life: 1.2, color: '#ffd23f', big: 1.2 });
+      ringFx(f.x, f.y, f.r * 3.5, 0.6, '255,210,63', 8);
+      burst(f.x, f.y, 14, ['#ffd23f', '#fff6a0'], 340, 0.7, {});
+    } else {
+      award(o, 1);
+      b.combo++; b.comboT = 0.28; b.cx = f.x; b.cy = f.y;
+      addCharge(o, 0.05);
+      if (f.t && f.t.sq) { burst(f.x, f.y, 18, [f.t.c, '#ffffff', f.t.c], 320, 0.75, {}); ringFx(f.x, f.y, f.r * 2.5, 0.4, '255,200,230', 6); sfx.squeak(); }
+      if (f.kind === 'ice') startFreeze(fidx(o), f.x, f.y);
+      else if (f.kind === 'heart') heal(o, f);
+    }
+    rings.push({ type: 'slash', x: f.x, y: f.y, ang, len: f.r * 3, life: 0.2, max: 0.2 });
+    ringFx(f.x, f.y, f.r * 1.9, 0.35, fever[fidx(o)].t > 0 ? '255,190,60' : '255,255,255', 4);
+    updateHud();
+    sfx.splat();
+    vibrate(12);
+  }
+
+  function explode(f, b) {
+    const vs = versus && b && b.owner != null;
+    const ch = chill && !versus;
+    if (vs) {
+      const p = pl[b.owner];
+      p.score = Math.max(0, p.score - 10); if (!chill) p.lives--; b.combo = 0;
+      flash = 0.5; shake = 0.6;
+    } else if (ch) {
+      score = Math.max(0, score - 10); if (b) b.combo = 0;
+      flash = 0.45; shake = 0.55;
+    } else {
+      state = 'dying'; dieT = 1.3;
+      flash = 1; shake = 1;
+    }
+    sfx.bomb(); vibrate([80, 40, 220]);
+    for (let i = 0; i < (vs || ch ? 35 : 60); i++) {
+      const a = Math.random() * Math.PI * 2, s = (100 + Math.random() * 600) * S, life = 0.5 + Math.random() * 0.8;
+      parts.push({ x: f.x, y: f.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life, max: life, size: (3 + Math.random() * 6) * S, c: Math.random() < 0.5 ? '#ffcc33' : (Math.random() < 0.5 ? '#ff5a1f' : '#555') });
+    }
+    texts.push({ x: f.x, y: f.y - f.r, s: vs || ch ? 'DUAR! -10' : 'DUAR!', sub: '', life: 1.3, color: '#ff5a3c' });
+    if (vs || ch) updateHud();
+  }
+
+  function spawnOne(bomb, zone, star, kind) {
+    const t = bomb ? null : star ? STAR : kind === 'ice' ? ICE : kind === 'heart' ? HEART : (pool => pool[(Math.random() * pool.length) | 0])(Math.random() < 0.28 ? SQUISH : FRUITS);
+    const r = (bomb ? 34 : t.r) * S * (t && t.sq ? 0.9 + Math.random() * 0.35 : 1);
+    const zoned = versus && zone !== undefined && zone >= 0;
+    const x0 = zoned ? zone * W / 2 : 0, zw = zoned ? W / 2 : W;
+    let x = x0 + zw * (0.12 + Math.random() * 0.76);
+    const h = H * (star ? 0.62 : 0.5 + Math.random() * 0.36);
+    const g = grav();
+    const vy = -Math.sqrt(2 * g * h);
+    const tAir = 2 * Math.sqrt(2 * h / g);
+    let targetX = x0 + zw * (0.2 + Math.random() * 0.6);
+    if (star) { x = W / 2; targetX = W / 2; }
+    const vx = (targetX - x) / tAir;
+    fruits.push({ x, y: H + r, vx, vy, rot: Math.random() * 6.28, vr: (Math.random() - 0.5) * 5, t, r, bomb, star: !!star, kind, ph: Math.random() * 6.28, zone: star ? -1 : (zoned ? zone : undefined), e: bomb ? '💣' : t.e, fuseT: 0 });
+    if (state === 'play') sfx.toss();
+  }
+
+  function spawnWave(z) {
+    const sc = z !== undefined ? pl[z].score : score;
+    const maxN = Math.min(z !== undefined ? 4 : 6, 1 + Math.floor(sc / 10));
+    const n = 1 + Math.floor(Math.random() * maxN);
+    const fvOn = fever[z === undefined ? 0 : z].t > 0;
+    const bombP = fvOn || sc < 5 ? 0 : Math.min(0.25, 0.08 + sc * 0.002);
+    const burst = Math.random() < 0.45;
+    let bombs = 0;
+    for (let i = 0; i < n; i++) {
+      const bomb = n > 1 && bombs < 2 && Math.random() < bombP || (n === 1 && sc > 15 && Math.random() < bombP * 0.5);
+      if (bomb) bombs++;
+      let kind;
+      if (!bomb) {
+        const rr = Math.random();
+        if (rr < 0.05) kind = 'ice';
+        else if (rr < 0.085 && (z !== undefined ? pl[z].lives < pl[z].max : lives < 5)) kind = 'heart';
+      }
+      queue.push({ t: elapsed + (burst ? Math.random() * 0.12 : i * 0.28), bomb, zone: z, kind });
+    }
+  }
+
+  function loseLife(x, z) {
+    if (chill) {
+      if (versus && z !== undefined && z >= 0) pl[z].missed++; else missed++;
+      misses.push({ x: Math.max(30, Math.min(W - 30, x)), life: 1.2 });
+      sfx.miss();
+      updateHud();
+      return;
+    }
+    if (versus && z !== undefined && z >= 0) pl[z].lives--; else lives--;
+    { const fv = fever[versus && z >= 0 ? z : 0]; if (fv.t <= 0) fv.c = 0; }
+    misses.push({ x: Math.max(30, Math.min(W - 30, x)), life: 1.2 });
+    sfx.miss(); vibrate(60);
+    updateHud();
+    if (!versus && lives <= 0) { state = 'dying'; dieT = 0.9; }
+  }
+
+  // ---------- sensors ----------
+  const sens = { on: false, seen: false, g: 0, b: 0, g0: 0, b0: 0, recal: true, tx: 0, ty: 0, x: 0, y: 0, vx: 0, vy: 0, lastFlick: 0, listening: false };
+
+  function screenAngle() {
+    let a = 0;
+    if (screen.orientation && typeof screen.orientation.angle === 'number') a = screen.orientation.angle;
+    else if (typeof window.orientation === 'number') a = window.orientation;
+    return ((a % 360) + 360) % 360;
+  }
+  // (u = kanan perangkat, v = bawah perangkat) -> koordinat layar
+  function mapAxes(u, v) {
+    const a = screenAngle();
+    if (a === 90) return [v, -u];
+    if (a === 270) return [-v, u];
+    if (a === 180) return [-u, -v];
+    return [u, v];
+  }
+
+  function onOrient(e) {
+    if (e.beta == null || e.gamma == null) return;
+    sens.seen = true;
+    if (sens.recal) { sens.g0 = e.gamma; sens.b0 = e.beta; sens.recal = false; }
+    sens.g = e.gamma; sens.b = e.beta;
+  }
+  function onMotion(e) {
+    const r = e.rotationRate;
+    if (!r || r.beta == null || r.gamma == null) return;
+    sens.seen = true;
+    if (!sens.on || state !== 'play') return;
+    const rb = r.beta * (settings.invY ? -1 : 1), rg = r.gamma;
+    const mag = Math.hypot(rb, rg);
+    const now = performance.now();
+    const thr = 230 / settings.flick;
+    if (mag > thr && now - sens.lastFlick > 260) {
+      sens.lastFlick = now;
+      const [dx, dy] = mapAxes(rg, rb);
+      const m = Math.hypot(dx, dy) || 1;
+      const imp = Math.min(W, H) * 9 * Math.min(1.6, mag / thr);
+      sens.vx += dx / m * imp; sens.vy += dy / m * imp;
+    }
+  }
+
+  async function enableSensors() {
+    try {
+      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        const res = await DeviceOrientationEvent.requestPermission();
+        if (res !== 'granted') throw new Error('denied');
+      }
+      if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+        try { await DeviceMotionEvent.requestPermission(); } catch (e) {}
+      }
+    } catch (e) {
+      toast('Izin sensor ditolak. Main pakai sentuhan dulu ya.');
+      return false;
+    }
+    if (!sens.listening) {
+      window.addEventListener('deviceorientation', onOrient);
+      window.addEventListener('devicemotion', onMotion);
+      sens.listening = true;
+    }
+    return true;
+  }
+
+  function updateSensor(dt, now) {
+    if (!sens.on) return;
+    const ppd = Math.min(W, H) / 2 / 22 * settings.sens; // piksel per derajat
+    const [dx, dy] = mapAxes(sens.g - sens.g0, (sens.b - sens.b0) * (settings.invY ? -1 : 1));
+    const tx = Math.max(-W * 0.05, Math.min(W * 1.05, W / 2 + dx * ppd));
+    const ty = Math.max(-H * 0.05, Math.min(H * 1.05, H / 2 + dy * ppd * 1.15));
+    const lp = Math.min(1, dt * 30);
+    sens.tx += (tx - sens.tx) * lp; sens.ty += (ty - sens.ty) * lp;
+    const k = 220, c = 2 * Math.sqrt(k) * 0.72;
+    sens.vx += (k * (sens.tx - sens.x) - c * sens.vx) * dt;
+    sens.vy += (k * (sens.ty - sens.y) - c * sens.vy) * dt;
+    sens.x += sens.vx * dt; sens.y += sens.vy * dt;
+    bladeMove(sensorBlade, sens.x, sens.y, now);
+  }
+
+  function calibrate() {
+    sens.recal = true;
+    sens.x = sens.tx = W / 2; sens.y = sens.ty = H / 2; sens.vx = sens.vy = 0;
+    sensorBlade.pts = []; sensorBlade.prev = null;
+  }
+
+  // ---------- camera (pelacakan jari) ----------
+  const MP_VER = '0.10.14';
+  const MP_URL = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MP_VER}`;
+  const HAND_MODEL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
+  const cam = { on: false, stream: null, lm: null, loading: null, lastVT: -1, seen: false, has: false, lostAt: 0,
+                tx: 0, ty: 0, x: 0, y: 0, rawX: 0.5, rawY: 0.5, lastDetect: 0 };
+  const video = $('camVideo');
+
+  function loadHandModel() {
+    if (cam.lm) return Promise.resolve(cam.lm);
+    if (cam.loading) return cam.loading;
+    cam.loading = (async () => {
+      const vision = await import(`${MP_URL}/vision_bundle.mjs`);
+      const files = await vision.FilesetResolver.forVisionTasks(`${MP_URL}/wasm`);
+      const opts = d => ({ baseOptions: { modelAssetPath: HAND_MODEL, delegate: d }, runningMode: 'VIDEO', numHands: 1,
+        minHandDetectionConfidence: 0.5, minHandPresenceConfidence: 0.5, minTrackingConfidence: 0.5 });
+      try { cam.lm = await vision.HandLandmarker.createFromOptions(files, opts('GPU')); }
+      catch (e) { cam.lm = await vision.HandLandmarker.createFromOptions(files, opts('CPU')); }
+      return cam.lm;
+    })();
+    cam.loading.catch(() => { cam.loading = null; });
+    return cam.loading;
+  }
+
+  // ---------- bantuan saat kamera gagal ----------
+  const UA = navigator.userAgent || '';
+  const isIOS = /iPhone|iPad|iPod/i.test(UA) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isAndroid = /Android/i.test(UA);
+  const isSamsung = /SamsungBrowser/i.test(UA);
+  const isFirefox = /Firefox|FxiOS/i.test(UA);
+  const inAppName = (() => {
+    if (/Instagram/i.test(UA)) return 'Instagram';
+    if (/FBAN|FBAV|FB_IAB|FBIOS/i.test(UA)) return 'Facebook';
+    if (/WhatsApp/i.test(UA)) return 'WhatsApp';
+    if (/Line\//i.test(UA)) return 'LINE';
+    if (/TikTok|musical_ly|BytedanceWebview/i.test(UA)) return 'TikTok';
+    if (/Telegram/i.test(UA)) return 'Telegram';
+    if (/Twitter/i.test(UA)) return 'X/Twitter';
+    if (isAndroid && /; wv\)/.test(UA)) return 'aplikasi ini';
+    if (isIOS && !/Safari\//.test(UA) && !/CriOS|FxiOS|EdgiOS/.test(UA)) return 'aplikasi ini';
+    return '';
+  })();
+  const inFrame = (() => { try { return window.self !== window.top; } catch (e) { return true; } })();
+  const pageUrl = location.origin + location.pathname;
+
+  function browserSteps() {
+    if (isIOS) {
+      return `<b>Cara mengizinkan kamera di iPhone/iPad:</b><ol>
+        <li>Ketuk ikon <b>ᴀA</b> (atau ikon kiri) di kolom alamat Safari → <b>Pengaturan Situs Web</b>.</li>
+        <li>Ubah <b>Kamera</b> menjadi <b>Izinkan</b> atau <b>Tanya</b>.</li>
+        <li>Jika tidak ada: buka <b>Pengaturan iPhone → Safari → Kamera</b> → pilih <b>Tanya</b> atau <b>Izinkan</b>.</li>
+        <li>Pakai Chrome di iPhone? Cek <b>Pengaturan iPhone → Chrome → Kamera</b> harus aktif.</li>
+        <li>Muat ulang halaman, lalu tekan <b>Coba Lagi</b>.</li></ol>`;
+    }
+    if (isSamsung) {
+      return `<b>Cara mengizinkan kamera di Samsung Internet:</b><ol>
+        <li>Ketuk ikon <b>gembok 🔒</b> di kolom alamat → <b>Izin</b> → aktifkan <b>Kamera</b>.</li>
+        <li>Atau menu <b>☰ → Pengaturan → Situs dan unduhan → Izin situs → Kamera</b>, hapus situs ini dari daftar blokir.</li>
+        <li>Pastikan juga <b>Pengaturan HP → Aplikasi → Samsung Internet → Izin → Kamera</b> diizinkan.</li>
+        <li>Muat ulang halaman, lalu tekan <b>Coba Lagi</b>.</li></ol>`;
+    }
+    if (isFirefox) {
+      return `<b>Cara mengizinkan kamera di Firefox:</b><ol>
+        <li>Ketuk ikon <b>gembok 🔒</b> di kolom alamat → ubah <b>Kamera</b> ke <b>Diizinkan</b> (atau hapus blokirnya).</li>
+        <li>Pastikan izin kamera untuk aplikasi Firefox aktif di pengaturan HP.</li>
+        <li>Muat ulang halaman, lalu tekan <b>Coba Lagi</b>.</li></ol>`;
+    }
+    if (isAndroid) {
+      return `<b>Cara mengizinkan kamera di Chrome Android:</b><ol>
+        <li>Ketuk ikon <b>pengaturan/gembok</b> di kiri kolom alamat → <b>Izin</b> → aktifkan <b>Kamera</b>.</li>
+        <li>Kalau tidak ada: <b>⋮ → Setelan → Setelan situs → Kamera</b> → hapus situs ini dari <b>Diblokir</b>, dan pastikan saklar Kamera aktif.</li>
+        <li>Cek juga <b>Pengaturan HP → Aplikasi → Chrome → Izin → Kamera</b> = <b>Izinkan</b>.</li>
+        <li>Muat ulang halaman, lalu tekan <b>Coba Lagi</b>.</li></ol>`;
+    }
+    return `<b>Cara mengizinkan kamera di browser komputer:</b><ol>
+      <li>Klik ikon <b>gembok 🔒 / kamera</b> di kolom alamat → ubah <b>Kamera</b> ke <b>Izinkan</b>.</li>
+      <li>Pastikan izin kamera untuk browser aktif di pengaturan privasi sistem (Windows: Privasi → Kamera; macOS: Pengaturan Sistem → Privasi & Keamanan → Kamera).</li>
+      <li>Muat ulang halaman, lalu tekan <b>Coba Lagi</b>.</li></ol>`;
+  }
+
+  function showCamHelp(kind) {
+    let msg = '', steps = '';
+    if (kind === 'inapp') {
+      msg = `Kamu membuka game dari dalam <b>${inAppName}</b>. Browser bawaan aplikasi ini biasanya memblokir kamera.`;
+      steps = `<b>Buka di browser biasa:</b><ol>
+        <li>Ketuk menu <b>⋮</b> atau <b>…</b> di pojok kanan atas.</li>
+        <li>Pilih <b>Buka di Chrome</b> / <b>Buka di Safari</b> / <b>Buka di browser</b>.</li>
+        <li>Atau salin alamat di bawah dan tempel di Chrome/Safari.</li></ol><span class="url">${pageUrl}</span>`;
+    } else if (kind === 'frame') {
+      msg = 'Game sedang tampil di dalam bingkai/pratinjau halaman lain, dan bingkai itu tidak diberi izin kamera.';
+      steps = `<b>Buka game di tab sendiri:</b><ol><li>Buka alamat ini langsung di Chrome/Safari:</li></ol><span class="url">${pageUrl}</span>`;
+    } else if (kind === 'insecure') {
+      msg = 'Halaman tidak dibuka lewat HTTPS, jadi browser selalu memblokir kamera.';
+      steps = `<b>Buka lewat alamat HTTPS:</b><span class="url">https://${location.host}${location.pathname}</span>`;
+    } else if (kind === 'unsupported') {
+      msg = 'Browser ini tidak mendukung akses kamera dari halaman web.';
+      steps = `Coba buka di <b>Chrome</b> (Android) atau <b>Safari</b> (iPhone) versi terbaru:<span class="url">${pageUrl}</span>`;
+    } else if (kind === 'busy') {
+      msg = 'Kamera tidak bisa dibuka. Biasanya karena kamera sedang dipakai aplikasi lain (video call, aplikasi kamera, tab lain).';
+      steps = '<ol><li>Tutup aplikasi atau tab lain yang memakai kamera.</li><li>Tekan <b>Coba Lagi</b>.</li></ol>';
+    } else if (kind === 'model') {
+      msg = 'Kamera berhasil dibuka, tapi pendeteksi jari gagal diunduh.';
+      steps = '<ol><li>Pastikan internet tersambung (pertama kali perlu mengunduh beberapa MB).</li><li>Matikan pemblokir iklan/VPN yang mungkin memblokir <i>cdn.jsdelivr.net</i> atau <i>storage.googleapis.com</i>.</li><li>Tekan <b>Coba Lagi</b>.</li></ol>';
+    } else {
+      msg = 'Browser menolak izin kamera untuk situs ini. Kalau sebelumnya pernah memilih <b>Blokir/Jangan izinkan</b>, browser tidak akan bertanya lagi sampai izinnya diubah manual.';
+      steps = browserSteps();
+    }
+    $('camHelp').querySelector('h2').textContent = kind === 'model' ? 'GAGAL MEMUAT' : kind === 'busy' ? 'KAMERA SIBUK' : 'KAMERA DITOLAK';
+    $('camHelpMsg').innerHTML = msg;
+    $('camHelpSteps').innerHTML = steps;
+    show('menu', false); show('over', false); hudOff(); show('gameBtns', false);
+    state = 'menu';
+    show('camHelp', true);
+  }
+
+  async function enableCamera() {
+    if (window.isSecureContext === false) { showCamHelp('insecure'); return false; }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      showCamHelp(inAppName ? 'inapp' : inFrame ? 'frame' : 'unsupported');
+      return false;
+    }
+    toast('Menyiapkan kamera & pendeteksi jari…', 8000);
+    try {
+      if (!cam.stream) {
+        cam.stream = await navigator.mediaDevices.getUserMedia({ audio: false,
+          video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30 } } });
+      }
+      video.srcObject = cam.stream;
+      await video.play().catch(() => {});
+    } catch (e) {
+      stopCamera();
+      toast('', 1);
+      const name = e && e.name;
+      if (name === 'NotAllowedError' || name === 'SecurityError' || name === 'PermissionDeniedError') {
+        showCamHelp(inAppName ? 'inapp' : inFrame ? 'frame' : 'denied');
+      } else if (name === 'NotFoundError' || name === 'OverconstrainedError' || name === 'DevicesNotFoundError') {
+        showCamHelp('unsupported');
+        $('camHelpMsg').textContent = 'Tidak ada kamera yang ditemukan di perangkat ini.';
+      } else {
+        showCamHelp('busy');
+      }
+      return false;
+    }
+    try { await loadHandModel(); }
+    catch (e) {
+      stopCamera();
+      toast('', 1);
+      showCamHelp('model');
+      return false;
+    }
+    try { await cam.lm.setOptions({ numHands: versus ? 2 : 1 }); } catch (e) {}
+    return true;
+  }
+
+  function stopCamera() {
+    cam.on = false;
+    if (cam.stream) { for (const t of cam.stream.getTracks()) t.stop(); cam.stream = null; }
+    video.srcObject = null;
+  }
+
+  // titik kamera (0..1, sudah dicerminkan) -> koordinat layar
+  function camToScreen(nx, ny) {
+    const r = settings.camRange, m = (1 - r) / 2;
+    return [((nx - m) / r) * W, ((ny - m) / r) * H];
+  }
+
+  function detectHand(now) {
+    if (!cam.on || !cam.lm || video.readyState < 2) return;
+    if (video.currentTime === cam.lastVT) return;
+    cam.lastVT = video.currentTime;
+    const ts = Math.max(cam.lastDetect + 1, now);
+    cam.lastDetect = ts;
+    let res;
+    try { res = cam.lm.detectForVideo(video, ts); } catch (e) { return; }
+    if (versus) { detectHandsVs(res); return; }
+    const hand = res && res.landmarks && res.landmarks[0];
+    if (!hand) {
+      if (cam.has) { cam.has = false; cam.lostAt = now; }
+      return;
+    }
+    const tip = hand[8]; // ujung jari telunjuk
+    cam.seen = true;
+    cam.rawX = 1 - tip.x; cam.rawY = tip.y;
+    const [sx, sy] = camToScreen(cam.rawX, cam.rawY);
+    if (!cam.has) {
+      // jari baru terlihat lagi: lompat langsung tanpa menebas di sepanjang lompatan
+      cam.x = cam.tx = sx; cam.y = cam.ty = sy;
+      camBlade.prev = null; camBlade.pts = [];
+    }
+    cam.tx = sx; cam.ty = sy; cam.has = true;
+  }
+
+  function detectHandsVs(res) {
+    const hs = (res && res.landmarks) || [];
+    const pts = hs.map(h => { const rx = 1 - h[8].x, ry = h[8].y; const [sx, sy] = camToScreen(rx, ry); return [sx, sy, rx, ry]; });
+    let asg = [null, null];
+    if (pts.length >= 2) { pts.sort((a, b) => a[0] - b[0]); asg = [pts[0], pts[pts.length - 1]]; }
+    else if (pts.length === 1) {
+      const p = pts[0], d = k => vc[k].has ? Math.hypot(p[0] - vc[k].x, p[1] - vc[k].y) : Infinity;
+      const i = (d(0) === Infinity && d(1) === Infinity) ? (p[0] < W / 2 ? 0 : 1) : (d(0) <= d(1) ? 0 : 1);
+      asg[i] = p;
+    }
+    for (let k = 0; k < 2; k++) {
+      const v = vc[k], p = asg[k];
+      if (!p) { v.has = false; continue; }
+      cam.seen = true;
+      v.rawX = p[2]; v.rawY = p[3];
+      if (!v.has) { v.x = v.tx = p[0]; v.y = v.ty = p[1]; v.blade.prev = null; v.blade.pts = []; }
+      v.tx = p[0]; v.ty = p[1]; v.has = true;
+    }
+  }
+
+  function updateCamera(dt, now) {
+    if (!cam.on) return;
+    detectHand(now);
+    if (versus) {
+      const lp = Math.min(1, dt * 28);
+      for (const v of vc) { if (!v.has) continue; v.x += (v.tx - v.x) * lp; v.y += (v.ty - v.y) * lp; bladeMove(v.blade, v.x, v.y, now); }
+      return;
+    }
+    if (!cam.has) return;
+    const lp = Math.min(1, dt * 28);
+    cam.x += (cam.tx - cam.x) * lp; cam.y += (cam.ty - cam.y) * lp;
+    bladeMove(camBlade, cam.x, cam.y, now);
+  }
+
+  function drawCamPreview() {
+    if (!cam.on || !settings.camPreview || video.readyState < 2 || !video.videoWidth) return;
+    const vw = video.videoWidth, vh = video.videoHeight;
+    const pw = Math.round(Math.min(W, H) * 0.3), ph = Math.round(pw * vh / vw);
+    const px = 12, py = H - ph - 64;
+    ctx.save();
+    ctx.globalAlpha = 0.85;
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(px, py, pw, ph, 10) : ctx.rect(px, py, pw, ph); ctx.clip();
+    ctx.translate(px + pw, py); ctx.scale(-1, 1);
+    ctx.drawImage(video, 0, 0, pw, ph);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    // area jangkauan
+    const r = settings.camRange, m = (1 - r) / 2;
+    ctx.strokeStyle = 'rgba(255,210,63,.8)'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
+    ctx.strokeRect(px + m * pw, py + m * ph, r * pw, r * ph); ctx.setLineDash([]);
+    if (cam.has) {
+      ctx.fillStyle = '#7fff6a';
+      ctx.beginPath(); ctx.arc(px + cam.rawX * pw, py + cam.rawY * ph, 4, 0, Math.PI * 2); ctx.fill();
+    }
+    if (versus) for (let k = 0; k < 2; k++) if (vc[k].has) {
+      ctx.fillStyle = `rgb(${PCOL[k]})`;
+      ctx.beginPath(); ctx.arc(px + vc[k].rawX * pw, py + vc[k].rawY * ph, 5, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+    ctx.strokeStyle = (cam.has || (versus && (vc[0].has || vc[1].has))) ? 'rgba(127,255,106,.9)' : 'rgba(255,90,60,.9)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(px, py, pw, ph, 10) : ctx.rect(px, py, pw, ph); ctx.stroke();
+  }
+
+  // ---------- touch ----------
+  function addPoint(b, e) { bladeMove(b, e.clientX, e.clientY, e.timeStamp || performance.now()); }
+  cv.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    initAudio();
+    const b = makeBlade(120, versus ? (e.clientX < W / 2 ? 0 : 1) : undefined);
+    touchBlades.set(e.pointerId, b);
+    addPoint(b, e);
+  });
+  cv.addEventListener('pointermove', e => {
+    const b = touchBlades.get(e.pointerId);
+    if (!b) return;
+    const list = e.getCoalescedEvents ? e.getCoalescedEvents() : null;
+    if (list && list.length) for (const ce of list) addPoint(b, ce); else addPoint(b, e);
+  });
+  const endPointer = e => { const b = touchBlades.get(e.pointerId); if (b) { b.dead = true; deadBlades.push(b); touchBlades.delete(e.pointerId); } };
+  cv.addEventListener('pointerup', endPointer);
+  cv.addEventListener('pointercancel', endPointer);
+  cv.addEventListener('pointerleave', endPointer);
+
+  // ---------- UI ----------
+  function hearts(el, p) {
+    let h = '';
+    const gained = el._l !== undefined && p.lives > el._l;
+    for (let i = 0; i < p.max; i++) h += `<span class="${i >= p.lives ? 'lost' : (gained && i === p.lives - 1 ? 'gain' : '')}">❤</span>`;
+    el.innerHTML = h; el._l = p.lives;
+  }
+  function renderHud() {
+    if (versus) {
+      $('vs1').textContent = pl[0].score; $('vs2').textContent = pl[1].score;
+      if (chill) {
+        [0, 1].forEach(i => { $('vl' + (i + 1)).innerHTML = `<span style="font-size:15px;color:#9dffb0;letter-spacing:1px">🌿 terlewat ${pl[i].missed}</span>`; $('vl' + (i + 1))._l = undefined; });
+      } else { hearts($('vl1'), pl[0]); hearts($('vl2'), pl[1]); }
+      return;
+    }
+    $('score').textContent = score;
+    $('bestHud').textContent = (chill ? 'REKOR SANTAI ' : (settings.timed ? 'REKOR 5 MENIT ' : 'TERBAIK ')) + Math.max(bests[bestKey()], score);
+    $('lives').classList.toggle('hidden', chill);
+    $('chillBadge').classList.toggle('hidden', !chill);
+    if (chill) $('chillBadge').textContent = '🌿 SANTAI · terlewat ' + missed;
+    const sp = $('lives').children;
+    for (let i = 0; i < 5; i++) sp[i].classList.toggle('lost', i >= lives);
+    const lv = $('lives');
+    if (lv._l !== undefined && lives > lv._l) { const e = sp[lives - 1]; e.classList.remove('gain'); void e.offsetWidth; e.classList.add('gain'); }
+    lv._l = lives;
+  }
+  function updateHud() { renderHud(); vsCheck(); }
+  function vsCheck() {
+    if (!versus || state !== 'play') return;
+    const a = pl[0], b = pl[1];
+    if (!chill && !vsHandicap && !sudden && Math.abs(a.score - b.score) > 20) {
+      const l = a.score < b.score ? a : b;
+      l.max = 6; l.lives++; vsHandicap = true;
+      toast(`Handicap: ${l === a ? 'P1' : 'P2'} tertinggal >20 poin → +1 ❤`, 2600);
+      renderHud();
+    }
+    let w = null;
+    if (sudden) {
+      if (a.lives <= 0 || b.lives <= 0) w = (a.lives <= 0 && b.lives <= 0) ? 'tie' : (a.lives <= 0 ? 1 : 0);
+      else if (sdT <= 0) w = a.score === b.score ? 'tie' : (a.score > b.score ? 0 : 1);
+    } else if (a.lives <= 0 || b.lives <= 0) {
+      if (a.lives <= 0 && b.lives <= 0) {
+        if (a.score === b.score) {
+          sudden = true; sdT = 30; a.lives = b.lives = a.max = b.max = 1;
+          toast('SERI! → SUDDEN DEATH: 1 ❤, 30 detik', 3200);
+          renderHud(); return;
+        }
+        w = a.score > b.score ? 0 : 1;
+      } else w = a.lives <= 0 ? 1 : 0;
+    }
+    if (w !== null) { winner = w; state = 'dying'; dieT = 0.9; }
+  }
+  function hudOff() { show('hud', false); show('hudVs', false); }
+  function setVersus(v) {
+    versus = v;
+    $('btnM1').classList.toggle('on', !v); $('btnM2').classList.toggle('on', v);
+    show('btnSensor', !v); show('vsHelp', v); show('chillHelp', chill);
+  }
+  function setChill(c) {
+    chill = c;
+    $('btnChill').classList.toggle('on', c);
+    $('btnChill').textContent = '🌿 Mode Santai: ' + (c ? 'NYALA' : 'MATI');
+    show('chillHelp', c);
+    $('btnInf').classList.toggle('on', c);
+    $('btnInf').textContent = c ? '♾️ Nyawa: ON' : '♾️ Nyawa';
+  }
+  $('btnChill').onclick = () => setChill(!chill);
+  const timedLabel = () => { $('btnTimed').classList.toggle('on', settings.timed); $('btnTimed').textContent = '⏱️ Waktu: ' + (settings.timed ? '5 MENIT' : 'BEBAS'); };
+  $('btnTimed').onclick = () => { settings.timed = !settings.timed; saveSettings(); timedLabel(); };
+  timedLabel();
+  function onTimeUp() {
+    timeUp = true;
+    texts.push({ x: W / 2, y: H * 0.36, s: 'WAKTU HABIS!', sub: '', life: 1.6, color: '#ffd23f', big: 1.7 });
+    if (versus) {
+      const a = pl[0].score, b = pl[1].score;
+      if (a === b && !chill) {
+        sudden = true; sdT = 30; pl[0].lives = pl[1].lives = pl[0].max = pl[1].max = 1;
+        toast('WAKTU HABIS — SERI! SUDDEN DEATH 30 detik, 1 ❤', 3400); renderHud(); return;
+      }
+      winner = a === b ? 'tie' : (a > b ? 0 : 1);
+    }
+    state = 'dying'; dieT = 1.0; sfx.combo();
+  }
+  function updateTimer(dt) {
+    if (!settings.timed || state !== 'play' || timeUp) return;
+    timeLeft -= dt;
+    const sec = Math.ceil(Math.max(0, timeLeft)), txt = '⏱ ' + fmtT(timeLeft), low = timeLeft <= 10;
+    if (versus) { if (!sudden) $('sdTimer').textContent = txt; }
+    else { $('timerS').textContent = txt; $('timerS').classList.toggle('low', low); }
+    if (sec !== lastSec) { lastSec = sec; if (sec <= 5 && sec > 0) tone(0.09, 880, 880, 0.12, 'square'); }
+    if (timeLeft <= 0) { timeLeft = 0; onTimeUp(); }
+  }
+  $('btnInf').onclick = () => {
+    setChill(!chill); updateHud();
+    toast(chill ? '♾️ Nyawa tak terbatas NYALA — buah jatuh tidak membuatmu kalah (bom −10 poin).' + (versus ? ' Akhiri lewat ⏸ → Selesai: skor tertinggi menang.' : '') : 'Nyawa tak terbatas MATI — kembali ke aturan biasa.', 2600);
+  };
+  $('btnM1').onclick = () => setVersus(false);
+  $('btnM2').onclick = () => setVersus(true);
+  let toastTimer = 0;
+  function toast(msg, ms = 3200) {
+    const t = $('toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), ms);
+  }
+  function show(id, on) { $(id).classList.toggle('hidden', !on); }
+
+  function startGame(useSensor, useCam = false) {
+    fruits = []; halves = []; parts = []; splats = []; texts = []; misses = []; queue = [];
+    score = 0; lives = 5; missed = 0; spawnT = 0.7; shake = 0; flash = 0;
+    timeLeft = MATCH_T; timeUp = false; lastSec = -1; $('timerS').textContent = ''; $('timerS').classList.remove('low');
+    pl = [mkP(), mkP()]; winner = null; sudden = false; sdT = 0; vsHandicap = false; starT = 9; spawnZ = [0.7, 1.1];
+    vc = [mkVc(0), mkVc(1)]; $('sdTimer').textContent = '';
+    rings = []; freeze = [{ t: 0, a: 0 }, { t: 0, a: 0 }]; fever = [{ c: 0, t: 0, a: 0 }, { c: 0, t: 0, a: 0 }];
+    $('lives')._l = $('vl1')._l = $('vl2')._l = undefined;
+    if (versus) useSensor = false;
+    state = 'play';
+    sens.on = useSensor;
+    sensorBlade = makeBlade(450);
+    camBlade = makeBlade(380);
+    cam.on = useCam; cam.has = false; cam.seen = false;
+    if (!useCam) stopCamera();
+    calibrate();
+    show('menu', false); show('over', false); show('paused', false);
+    show('hud', !versus); show('hudVs', versus); show('gameBtns', true); show('btnInf', true);
+    $('btnCal').style.display = useSensor ? '' : 'none';
+    updateHud();
+    if (useCam) {
+      toast('Tunjukkan jari telunjuk ke kamera depan, lalu sabetkan cepat untuk menebas!', 3800);
+      setTimeout(() => {
+        if (state === 'play' && cam.on && !cam.seen) toast('Jari belum terlihat. Pastikan cahaya cukup dan tangan ±30–60 cm dari kamera.', 4200);
+      }, 4500);
+    }
+    if (useSensor) {
+      sens.seen = false;
+      toast('Pegang HP dengan nyaman — posisi ini jadi titik tengah. Miringkan untuk bergerak, kibaskan untuk menebas!', 3800);
+      setTimeout(() => {
+        if (state === 'play' && sens.on && !sens.seen) {
+          sens.on = false;
+          $('btnCal').style.display = 'none';
+          toast('Sensor gerak tidak terdeteksi di perangkat/browser ini. Mode sentuhan aktif.', 4200);
+        }
+      }, 1800);
+    }
+  }
+
+  function gameOver() {
+    state = 'over';
+    sens.on = false;
+    stopCamera();
+    show('paused', false);
+    show('btnAgainSensor', !versus);
+    if (versus) {
+      $('overTitle').textContent = winner === 'tie' ? 'SERI!' : `🏆 P${winner + 1} MENANG`;
+      $('overScore').textContent = `${pl[0].score} : ${pl[1].score}`;
+      $('overBest').textContent = 'Skor P1 : P2';
+    } else {
+      const key = bestKey(), nb = score > bests[key];
+      if (nb) { bests[key] = score; store.set(key, score); }
+      const label = chill ? ' santai' : (settings.timed ? ' 5 menit' : '');
+      $('overTitle').textContent = nb && score > 0 ? (chill ? 'REKOR SANTAI!' : 'REKOR BARU!') : (timeUp ? 'WAKTU HABIS!' : (chill ? 'SELESAI' : 'GAME OVER'));
+      $('overScore').textContent = score;
+      $('overBest').textContent = (chill ? `Terlewat: ${missed} · ` : '') + 'Rekor' + label + ': ' + bests[key];
+    }
+    hudOff(); show('gameBtns', false);
+    show('over', true);
+  }
+
+  function pauseGame() {
+    if (state !== 'play') return;
+    state = 'paused';
+    show('btnFinish', chill);
+    show('paused', true);
+  }
+
+  async function onStartSensor() {
+    initAudio();
+    const ok = await enableSensors();
+    startGame(ok);
+  }
+  let camBusy = false;
+  async function onStartCam() {
+    if (camBusy) return;
+    camBusy = true;
+    initAudio();
+    show('camHelp', false);
+    const ok = await enableCamera();
+    camBusy = false;
+    if (ok) startGame(false, true);
+  }
+  $('btnCamRetry').onclick = () => { if (location.protocol === 'http:' && location.hostname !== 'localhost') { location.href = location.href.replace(/^http:/, 'https:'); return; } onStartCam(); };
+  $('btnCamTouch').onclick = () => { show('camHelp', false); initAudio(); startGame(false); };
+  $('btnCamMenu').onclick = () => { show('camHelp', false); show('menu', true); };
+  $('btnCam').onclick = onStartCam;
+  $('btnAgainCam').onclick = onStartCam;
+  $('btnSensor').onclick = onStartSensor;
+  $('btnAgainSensor').onclick = onStartSensor;
+  $('btnTouch').onclick = () => { initAudio(); startGame(false); };
+  $('btnAgainTouch').onclick = () => { initAudio(); startGame(false); };
+  $('btnCal').onclick = () => { calibrate(); toast('Dikalibrasi ✔', 1200); };
+  $('btnPause').onclick = pauseGame;
+  $('btnFinish').onclick = () => {
+    if (versus) winner = pl[0].score === pl[1].score ? 'tie' : (pl[0].score > pl[1].score ? 0 : 1);
+    gameOver();
+  };
+  $('btnResume').onclick = () => { show('paused', false); state = 'play'; last = performance.now(); };
+  $('btnHome').onclick = () => { show('over', false); hudOff(); show('gameBtns', false); sens.on = false; stopCamera(); state = 'menu'; fruits = []; halves = []; parts = []; rings = []; texts = []; show('menu', true); };
+  $('btnQuit').onclick = () => { show('paused', false); hudOff(); show('gameBtns', false); sens.on = false; stopCamera(); state = 'menu'; fruits = []; show('menu', true); };
+  const muteLabel = () => { $('btnMute').textContent = settings.mute ? '🔇' : '🔊'; };
+  $('btnMute').onclick = () => { settings.mute = !settings.mute; if (master) master.gain.value = settings.mute ? 0 : 0.5; saveSettings(); muteLabel(); };
+  muteLabel();
+
+  const sSens = $('sSens'), sFlick = $('sFlick'), sInv = $('sInv');
+  sSens.value = settings.sens; sFlick.value = settings.flick; sInv.checked = settings.invY;
+  sSens.oninput = () => { settings.sens = +sSens.value; saveSettings(); };
+  sFlick.oninput = () => { settings.flick = +sFlick.value; saveSettings(); };
+  sInv.onchange = () => { settings.invY = sInv.checked; saveSettings(); };
+  const sCam = $('sCam'), sPrev = $('sPrev');
+  sCam.value = settings.camRange; sPrev.checked = settings.camPreview;
+  sCam.oninput = () => { settings.camRange = +sCam.value; saveSettings(); };
+  sPrev.onchange = () => { settings.camPreview = sPrev.checked; saveSettings(); };
+  if (window.isSecureContext === false) show('secureWarn', true);
+
+  document.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(); });
+  window.addEventListener('resize', resize);
+  window.addEventListener('orientationchange', () => setTimeout(() => { resize(); if (sens.on) calibrate(); }, 250));
+
+  // ---------- update ----------
+  function update(dt, now) {
+    elapsed += dt;
+    updateTimer(dt);
+    if (state === 'play' && versus) {
+      for (let z = 0; z < 2; z++) {
+        spawnZ[z] -= dt;
+        if (spawnZ[z] <= 0) { spawnWave(z); spawnZ[z] = Math.max(1.0, 2.0 - pl[z].score * 0.012) + Math.random() * 0.5; }
+      }
+      starT -= dt;
+      if (starT <= 0) { queue.push({ t: elapsed, bomb: false, star: true, zone: -1 }); starT = 10 + Math.random() * 5; }
+      if (sudden) { sdT -= dt; $('sdTimer').textContent = 'SUDDEN DEATH ' + Math.max(0, Math.ceil(sdT)); vsCheck(); }
+    } else if (state === 'play') {
+      spawnT -= dt;
+      if (spawnT <= 0) { spawnWave(); spawnT = Math.max(0.8, 1.9 - score * 0.012) + Math.random() * 0.4; }
+    } else if (state === 'menu' || state === 'over') {
+      spawnT -= dt;
+      if (spawnT <= 0) { queue.push({ t: elapsed, bomb: false }); spawnT = 1.1 + Math.random() * 0.6; }
+    }
+    for (let i = queue.length - 1; i >= 0; i--) if (elapsed >= queue[i].t) { const q = queue.splice(i, 1)[0]; if (q.bomb && fever[q.zone >= 0 ? q.zone : 0].t > 0) continue; spawnOne(q.bomb, q.zone, q.star, q.kind); }
+
+    const g = grav();
+    for (let i = fruits.length - 1; i >= 0; i--) {
+      const f = fruits[i];
+      const fz = frozenIdx(f), dk = dt * (fz >= 0 ? 1 - 0.65 * freeze[fz].a : 1);
+      f.vy += g * dk; f.x += f.vx * dk; f.y += f.vy * dk; f.rot += f.vr * dk;
+      if (f.bomb) {
+        f.fuseT -= dt;
+        if (f.fuseT <= 0) {
+          f.fuseT = 0.03;
+          const fx = f.x + Math.cos(f.rot - 0.8) * f.r * 0.95, fy = f.y + Math.sin(f.rot - 0.8) * f.r * 0.95;
+          const a = Math.random() * 6.28, s = 40 + Math.random() * 90;
+          parts.push({ x: fx, y: fy, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 40, life: 0.25, max: 0.25, size: 2 * S, c: Math.random() < 0.5 ? '#fff6a0' : '#ffae00' });
+        }
+      }
+      if (f.vy > 0 && f.y > H + f.r * 1.4) {
+        fruits.splice(i, 1);
+        if (!f.bomb && !f.star && !f.kind && state === 'play') loseLife(f.x, f.zone);
+      }
+    }
+    for (let i = halves.length - 1; i >= 0; i--) {
+      const h = halves[i];
+      h.vy += g * dt; h.x += h.vx * dt; h.y += h.vy * dt; h.rot += h.vr * dt;
+      if (h.y > H + h.r * 2) halves.splice(i, 1);
+    }
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const p = parts[i];
+      if (!p.ng) p.vy += g * 0.5 * dt; p.vx *= 0.985; p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
+      if (p.life <= 0) parts.splice(i, 1);
+    }
+    for (let i = splats.length - 1; i >= 0; i--) { splats[i].life -= dt / 3; if (splats[i].life <= 0) splats.splice(i, 1); }
+    for (let i = texts.length - 1; i >= 0; i--) { const t = texts[i]; t.y -= 35 * dt; t.life -= dt; t.age = (t.age || 0) + dt; if (t.life <= 0) texts.splice(i, 1); }
+    for (let i = rings.length - 1; i >= 0; i--) { rings[i].life -= dt; if (rings[i].life <= 0) rings.splice(i, 1); }
+    for (let i = misses.length - 1; i >= 0; i--) { misses[i].life -= dt; if (misses[i].life <= 0) misses.splice(i, 1); }
+
+    if (state === 'play' || state === 'dying') { updateSensor(dt, now); updateCamera(dt, now); }
+
+    for (let i = 0; i < 2; i++) {
+      const fz = freeze[i], fv = fever[i];
+      if (state === 'menu' || state === 'over') { fz.t = 0; fv.t = 0; fv.c = 0; }
+      if (state === 'play') {
+        if (fz.t > 0) fz.t -= dt;
+        if (fv.t > 0) { fv.t -= dt; fv.c = Math.max(0, fv.t / FEVER_T); if (fv.t <= 0) { fv.t = 0; fv.c = 0; } }
+      }
+      const lp = Math.min(1, dt * 6);
+      fz.a += ((fz.t > 0 ? 1 : 0) - fz.a) * lp; fv.a += ((fv.t > 0 ? 1 : 0) - fv.a) * lp;
+      if (!versus && i === 1) continue;
+      const x0 = versus ? i * W / 2 : 0, w = versus ? W / 2 : W;
+      if (fz.a > 0.3 && Math.random() < dt * 22) parts.push({ x: x0 + Math.random() * w, y: -10, vx: (Math.random() - 0.5) * 40 * S, vy: (50 + Math.random() * 90) * S, life: 3, max: 3, size: (14 + Math.random() * 12) * S, c: '#fff', g: '❄', ng: 1 });
+      if (fv.t > 0) {
+        const n = Math.floor(dt * 90 + Math.random());
+        for (let q = 0; q < n; q++) {
+          const l = 0.5 + Math.random() * 0.7;
+          parts.push({ x: x0 + Math.random() * w, y: H + 6, vx: (Math.random() - 0.5) * 50 * S, vy: -(180 + Math.random() * 420) * S, life: l, max: l, size: (3 + Math.random() * 6) * S, c: Math.random() < 0.5 ? '#ffb000' : (Math.random() < 0.5 ? '#ff5a1f' : '#fff6a0'), ng: 1 });
+        }
+      }
+    }
+    updateFeverHud();
+
+    const all = [sensorBlade, camBlade, vc[0].blade, vc[1].blade, ...touchBlades.values(), ...deadBlades];
+    for (const b of all) {
+      while (b.pts.length && now - b.pts[0].t > TRAIL_MS) b.pts.shift();
+      if (b.comboT > 0) {
+        b.comboT -= dt;
+        if (b.comboT <= 0) {
+          if (b.combo >= 3 && state === 'play') {
+            if (versus && b.owner != null) {
+              award(b.owner, b.combo); addCharge(b.owner, 0.25);
+              if (b.combo >= 5) {
+                queue.push({ t: elapsed, bomb: true, zone: 1 - b.owner });
+                texts.push({ x: b.cx, y: b.cy - 50 * S, s: 'SERANG! 💣', sub: '', life: 1.3, color: '#ff8a5a' });
+              }
+            } else { award(undefined, b.combo); addCharge(undefined, 0.25); }
+            texts.push({ x: b.cx, y: b.cy, s: 'COMBO x' + b.combo, sub: '+' + b.combo, life: 1.3, color: '#ffd23f' });
+            sfx.combo(); updateHud();
+          }
+          b.combo = 0;
+        }
+      }
+    }
+    deadBlades = deadBlades.filter(b => b.pts.length || b.comboT > 0);
+
+    shake = Math.max(0, shake - dt * 1.8);
+    flash = Math.max(0, flash - dt * 1.4);
+    if (state === 'dying') { dieT -= dt; if (dieT <= 0) gameOver(); }
+  }
+
+  // ---------- draw ----------
+  function drawBlade(b, now) {
+    const pts = b.pts;
+    if (pts.length < 2) return;
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    const gl = fever[fidx(b.owner)].t > 0 ? '255,150,30' : (b.owner != null ? PCOL[b.owner] : '110,215,255');
+    for (let pass = 0; pass < 2; pass++) {
+      for (let i = 1; i < pts.length; i++) {
+        const a = pts[i - 1], c = pts[i];
+        const w = Math.min(1, Math.max(0, 1 - (now - c.t) / TRAIL_MS));
+        if (w <= 0) continue;
+        const taper = 0.25 + 0.75 * (i / (pts.length - 1));
+        ctx.strokeStyle = pass ? `rgba(255,255,255,${0.95 * w})` : `rgba(${gl},${(fever[fidx(b.owner)].t > 0 ? 0.6 : 0.35) * w})`;
+        ctx.lineWidth = (pass ? 5 : 16) * S * w * taper;
+        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(c.x, c.y); ctx.stroke();
+      }
+    }
+  }
+
+  function draw(now) {
+    ctx.save();
+    if (shake > 0) ctx.translate((Math.random() - 0.5) * 24 * shake, (Math.random() - 0.5) * 24 * shake);
+    ctx.drawImage(bg, 0, 0, W, H);
+    if (versus && (state === 'play' || state === 'paused' || state === 'dying')) {
+      ctx.fillStyle = 'rgba(255,90,90,.07)'; ctx.fillRect(0, 0, W / 2, H);
+      ctx.fillStyle = 'rgba(90,160,255,.07)'; ctx.fillRect(W / 2, 0, W / 2, H);
+      ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 2; ctx.setLineDash([10 * S, 10 * S]);
+      ctx.beginPath(); ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, H); ctx.stroke(); ctx.setLineDash([]);
+    }
+
+    for (const s of splats) {
+      ctx.globalAlpha = Math.max(0, s.life) * 0.5;
+      ctx.fillStyle = s.c;
+      const rnd = mulberry(s.seed);
+      ctx.beginPath(); ctx.arc(s.x, s.y, s.r * 0.65, 0, Math.PI * 2); ctx.fill();
+      for (let i = 0; i < 9; i++) {
+        const a = rnd() * 6.28, d = s.r * (0.55 + rnd() * 1.0);
+        ctx.beginPath(); ctx.arc(s.x + Math.cos(a) * d, s.y + Math.sin(a) * d, s.r * (0.06 + rnd() * 0.18), 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    ctx.globalAlpha = 1;
+
+    for (const h of halves) {
+      const im = emojiImg(h.e, h.r);
+      ctx.save();
+      ctx.translate(h.x, h.y);
+      ctx.rotate(h.rot + h.cut);
+      const R = h.r * 1.5;
+      ctx.beginPath(); ctx.rect(-R, h.side > 0 ? 0 : -R, 2 * R, R); ctx.clip();
+      ctx.rotate(-h.cut);
+      ctx.drawImage(im, -im.sz / 2, -im.sz / 2, im.sz, im.sz);
+      ctx.rotate(h.cut);
+      ctx.strokeStyle = h.c; ctx.lineWidth = 4 * S; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(-h.r * 0.62, 0); ctx.lineTo(h.r * 0.62, 0); ctx.stroke();
+      ctx.restore();
+    }
+
+    for (const f of fruits) {
+      const im = emojiImg(f.e, f.r);
+      ctx.save();
+      ctx.translate(f.x, f.y);
+      if (f.bomb) {
+        const pulse = 0.5 + 0.5 * Math.sin(elapsed * 14);
+        const gr = ctx.createRadialGradient(0, 0, f.r * 0.3, 0, 0, f.r * 1.7);
+        gr.addColorStop(0, `rgba(255,40,20,${0.35 + 0.3 * pulse})`); gr.addColorStop(1, 'rgba(255,40,20,0)');
+        ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(0, 0, f.r * 1.7, 0, Math.PI * 2); ctx.fill();
+      }
+      if (f.kind || f.star) {
+        const pulse = 0.5 + 0.5 * Math.sin(elapsed * 8 + f.x);
+        const gr = ctx.createRadialGradient(0, 0, f.r * 0.3, 0, 0, f.r * 1.9);
+        gr.addColorStop(0, hexA(f.t.c, 0.45 + 0.3 * pulse)); gr.addColorStop(1, hexA(f.t.c, 0));
+        ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(0, 0, f.r * 1.9, 0, Math.PI * 2); ctx.fill();
+      }
+      { const zi = frozenIdx(f);
+        if (zi >= 0 && freeze[zi].a > 0.05) {
+          const gr = ctx.createRadialGradient(0, 0, f.r * 0.5, 0, 0, f.r * 1.5);
+          gr.addColorStop(0, `rgba(160,230,255,${0.1 * freeze[zi].a})`); gr.addColorStop(0.8, `rgba(160,230,255,${0.5 * freeze[zi].a})`); gr.addColorStop(1, 'rgba(160,230,255,0)');
+          ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(0, 0, f.r * 1.5, 0, Math.PI * 2); ctx.fill();
+        } }
+      if (f.t && f.t.sq) { const w = Math.sin(elapsed * 11 + f.ph); ctx.scale(1 + 0.1 * w, 1 - 0.1 * w); }
+      ctx.rotate(f.rot);
+      ctx.drawImage(im, -im.sz / 2, -im.sz / 2, im.sz, im.sz);
+      ctx.restore();
+    }
+
+    for (const p of parts) {
+      ctx.globalAlpha = Math.max(0, p.life / p.max);
+      if (p.g) {
+        ctx.font = `${Math.round(p.size)}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(p.g, p.x, p.y);
+      } else if (p.shard) {
+        ctx.fillStyle = p.c; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.life * 9);
+        ctx.fillRect(-p.size * 1.6, -p.size * 0.4, p.size * 3.2, p.size * 0.8); ctx.restore();
+      } else {
+        ctx.fillStyle = p.c;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    ctx.globalAlpha = 1;
+
+    for (const rg of rings) {
+      const k = Math.max(0, rg.life / rg.max);
+      if (rg.type === 'slash') {
+        ctx.save(); ctx.translate(rg.x, rg.y); ctx.rotate(rg.ang);
+        const L = rg.len * (1.5 - k * 0.5), gr = ctx.createLinearGradient(-L, 0, L, 0);
+        gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(0.5, `rgba(255,255,255,${k})`); gr.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = gr; ctx.fillRect(-L, -(1 + 3 * k) * S, 2 * L, (2 + 6 * k) * S);
+        ctx.restore();
+      } else {
+        ctx.strokeStyle = `rgba(${rg.c},${k})`; ctx.lineWidth = rg.w * S * k + 0.5;
+        ctx.beginPath(); ctx.arc(rg.x, rg.y, Math.max(1, rg.r1 * (1 - k * k)), 0, Math.PI * 2); ctx.stroke();
+      }
+    }
+
+    for (let i = 0; i < (versus ? 2 : 1); i++) {
+      const x0 = versus ? i * W / 2 : 0, w = versus ? W / 2 : W, fz = freeze[i], fv = fever[i];
+      if (fz.a > 0.01) {
+        ctx.save(); ctx.beginPath(); ctx.rect(x0, 0, w, H); ctx.clip();
+        const gr = ctx.createRadialGradient(x0 + w / 2, H / 2, Math.min(w, H) * 0.25, x0 + w / 2, H / 2, Math.max(w, H) * 0.75);
+        gr.addColorStop(0, 'rgba(120,210,255,0)'); gr.addColorStop(1, `rgba(120,210,255,${0.5 * fz.a})`);
+        ctx.fillStyle = gr; ctx.fillRect(x0, 0, w, H);
+        ctx.fillStyle = `rgba(150,220,255,${0.07 * fz.a})`; ctx.fillRect(x0, 0, w, H);
+        ctx.restore();
+      }
+      if (fv.a > 0.01) {
+        const pulse = 0.65 + 0.35 * Math.sin(elapsed * 9);
+        ctx.save(); ctx.beginPath(); ctx.rect(x0, 0, w, H); ctx.clip();
+        const gr = ctx.createRadialGradient(x0 + w / 2, H / 2, Math.min(w, H) * 0.3, x0 + w / 2, H / 2, Math.max(w, H) * 0.8);
+        gr.addColorStop(0, 'rgba(255,120,20,0)'); gr.addColorStop(1, `rgba(255,110,20,${(0.3 + 0.2 * pulse) * fv.a})`);
+        ctx.fillStyle = gr; ctx.fillRect(x0, 0, w, H);
+        const lg = ctx.createLinearGradient(0, H, 0, H * 0.7);
+        lg.addColorStop(0, `rgba(255,140,0,${0.5 * fv.a * pulse})`); lg.addColorStop(1, 'rgba(255,140,0,0)');
+        ctx.fillStyle = lg; ctx.fillRect(x0, H * 0.7, w, H * 0.3);
+        ctx.restore();
+      }
+    }
+
+    drawBlade(sensorBlade, now);
+    drawBlade(camBlade, now);
+    drawBlade(vc[0].blade, now); drawBlade(vc[1].blade, now);
+    for (const b of touchBlades.values()) drawBlade(b, now);
+    for (const b of deadBlades) drawBlade(b, now);
+
+    const drawCursor = (x, y, col = '160,230,255') => {
+      const r = 9 * S;
+      const gr = ctx.createRadialGradient(x, y, 0, x, y, r * 3);
+      gr.addColorStop(0, `rgba(${col},0.9)`); gr.addColorStop(1, `rgba(${col},0)`);
+      ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(x, y, r * 3, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(x, y, r * 0.55, 0, Math.PI * 2); ctx.fill();
+    };
+    if (state === 'play' || state === 'paused') {
+      if (sens.on) drawCursor(sens.x, sens.y);
+      if (cam.on && cam.has) drawCursor(cam.x, cam.y);
+      if (cam.on && versus) vc.forEach((v, k) => { if (v.has) drawCursor(v.x, v.y, PCOL[k]); });
+    }
+
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for (const m of misses) {
+      ctx.globalAlpha = Math.min(1, m.life);
+      ctx.font = `${Math.round(40 * S)}px Bangers, Impact, sans-serif`;
+      ctx.fillStyle = '#ff3b30'; ctx.strokeStyle = '#3a0000'; ctx.lineWidth = 4;
+      ctx.strokeText('✕', m.x, H - 40 * S); ctx.fillText('✕', m.x, H - 40 * S);
+    }
+    for (const t of texts) {
+      ctx.globalAlpha = Math.min(1, t.life * 1.5);
+      const big = t.big || 1;
+      ctx.font = `${Math.round(34 * S * big)}px Bangers, Impact, sans-serif`;
+      ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(60,20,0,.9)'; ctx.fillStyle = t.color;
+      const x = Math.max(80 * S, Math.min(W - 80 * S, t.x));
+      const k = Math.min(1, (t.age || 0) / 0.28), sc = 1 + 2.7 * Math.pow(k - 1, 3) + 1.7 * Math.pow(k - 1, 2);
+      ctx.save(); ctx.translate(x, t.y); ctx.scale(sc, sc); ctx.rotate((1 - k) * -0.15);
+      ctx.strokeText(t.s, 0, 0); ctx.fillText(t.s, 0, 0);
+      if (t.sub) {
+        ctx.font = `${Math.round(26 * S * Math.min(big, 1.2))}px Bangers, Impact, sans-serif`;
+        ctx.strokeText(t.sub, 0, 30 * S * big); ctx.fillText(t.sub, 0, 30 * S * big);
+      }
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+
+    if (state === 'play' || state === 'paused' || state === 'dying') drawCamPreview();
+
+    if (flash > 0) {
+      ctx.fillStyle = `rgba(255,250,235,${Math.min(1, flash)})`;
+      ctx.fillRect(0, 0, W, H);
+    }
+  }
+
+  // ---------- loop ----------
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min(1 / 30, Math.max(0, (now - last) / 1000));
+    last = now;
+    if (state !== 'paused') update(dt, now);
+    draw(now);
+    requestAnimationFrame(frame);
+  }
+
+  resize();
+  $('bestHud').textContent = 'TERBAIK ' + best;
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

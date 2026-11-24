@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#1a0f08">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Buah Ninja Sensor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bangers&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="../shared/menu.css">
+</head>
+<body>
+<canvas id="c"></canvas>
+<video id="camVideo" playsinline muted autoplay></video>
+
+<div class="hud hidden" id="hud">
+  <div>
+    <div class="score" id="score">0</div>
+    <div class="best" id="bestHud">TERBAIK 0</div>
+    <div class="timer" id="timerS"></div>
+    <div class="fbar" id="fbS"><i></i></div>
+  </div>
+  <div><div class="lives" id="lives"><span>❤</span><span>❤</span><span>❤</span><span>❤</span><span>❤</span></div><div class="chillBadge hidden" id="chillBadge"></div></div>
+</div>
+<div class="hud vs hidden" id="hudVs">
+  <div class="pbox p1"><div class="pn">P1 ●</div><div class="score" id="vs1">0</div><div class="lives" id="vl1"></div><div class="fbar" id="fbV1"><i></i></div></div>
+  <div class="sdTimer" id="sdTimer"></div>
+  <div class="pbox p2"><div class="pn">● P2</div><div class="score" id="vs2">0</div><div class="lives" id="vl2"></div><div class="fbar" id="fbV2"><i></i></div></div>
+</div>
+<div class="camp hidden" id="campHud"><div class="cl" id="campLv">LEVEL 1</div><div class="cg" id="campGoal"></div><div class="cbar"><i id="campBar"></i></div></div>
+<div class="boss hidden" id="bossHud"><div class="bn"><span id="bossName">BOSS</span><span class="bt" id="bossT"></span></div><div class="hp"><i id="bossHp"></i></div></div>
+<div class="btns hidden" id="gameBtns">
+  <button class="btn-sm" id="btnCal">🎯 Kalibrasi</button>
+  <button class="btn-sm" id="btnInf" title="Nyawa tak terbatas">♾️ Nyawa</button>
+  <button class="btn-sm" id="btnMute">🔊</button>
+  <button class="btn-sm" id="btnPause">⏸</button>
+</div>
+
+<div class="overlay" id="menu">
+  <h1>BUAH NINJA<small>SENSOR</small></h1>
+  <p>Arahkan <b>jari telunjuk</b> ke kamera depan dan <b>sabetkan dengan cepat</b> untuk menebas buah. Hindari bom 💣 dan jangan biarkan 5 buah jatuh.</p>
+  <div class="hint">🧸 Skuisi (22 jenis mainan empuk) ikut terbang selain buah · ❄️ Buah beku = waktu melambat 3 dtk · 💖 Buah hati = +1 ❤ · Isi bar 🔥 FEVER = skor x2 &amp; bom hilang 8 dtk</div>
+  <div class="modes" id="gmBox"><button class="btn mode on" id="btnGmClassic">🍉 Klasik</button><button class="btn mode" id="btnGmArcade">🏰 Arcade</button><button class="btn mode" id="btnGmBoss">👹 Boss</button></div>
+  <div class="hint hidden" id="gmHelp"></div>
+  <div class="lb hidden" id="lbMenu"><div class="lbt">🏆 PERINGKAT GLOBAL</div><ol id="lbMenuList"></ol></div>
+  <div class="modes" id="chillBox"><button class="btn mode on" id="btnTimed">⏱️ Waktu: 5 MENIT</button><button class="btn mode" id="btnChill">🌿 Mode Santai: MATI</button></div>
+  <div class="hint hidden" id="chillHelp"><b>Mode Santai:</b> tanpa nyawa — buah jatuh tidak membuatmu kalah, dan bom hanya −10 poin. Main sepuasnya, lalu tekan ⏸ → <b>Selesai</b> untuk menyimpan skor. Di 2 Player, yang skornya tertinggi saat Selesai menang.</div>
+  <div class="modes" id="vsBox"><button class="btn mode on" id="btnM1">👤 1 Player</button><button class="btn mode" id="btnM2">👥 2 Player</button></div>
+  <div class="hint hidden" id="vsHelp"><b>2 Player:</b> layar dibagi dua — <b style="color:#ff7b7b">P1 kiri</b>, <b style="color:#6fb4ff">P2 kanan</b>, masing-masing 5 ❤. Buah jatuh di zonamu = −1 ❤. Bom 💣 ditebas = −10 poin & −1 ❤. ⭐ di tengah boleh direbut siapa saja (+5). Combo 5 buah mengirim bom ke zona lawan. Kamera: tunjukkan 2 jari (satu per pemain). Sentuhan: tiap pemain pakai jarinya di sisi masing-masing.</div>
+  <button class="btn cam" id="btnCam">📷 Main pakai Kamera (Jari)</button>
+  <button class="btn alt" id="btnSensor">🎮 Main pakai Sensor Miring</button>
+  <button class="btn" id="btnTouch">👆 Main pakai Sentuhan</button>
+  <details>
+    <summary>⚙️ Pengaturan</summary>
+    <div class="set"><label for="sCam">Jangkauan jari (kamera)</label><input type="range" id="sCam" min="0.5" max="1" step="0.05"></div>
+    <div class="set"><label for="sPrev">Tampilkan pratinjau kamera</label><input type="checkbox" id="sPrev"></div>
+    <div class="set"><label for="sMus">Musik latar</label><input type="checkbox" id="sMus"></div>
+    <div class="set"><label for="sSens">Kepekaan miring</label><input type="range" id="sSens" min="0.5" max="2.5" step="0.1"></div>
+    <div class="set"><label for="sFlick">Kepekaan kibasan</label><input type="range" id="sFlick" min="0.4" max="2" step="0.1"></div>
+    <div class="set"><label for="sInv">Balik arah atas/bawah</label><input type="checkbox" id="sInv"></div>
+    <div class="hint">Mode kamera: makin kecil jangkauan, makin sedikit jari perlu digerakkan. Mode sensor miring: saat mulai, posisi HP kamu dijadikan titik tengah. Tekan 🎯 Kalibrasi kapan saja untuk mengatur ulang.</div>
+  </details>
+  <a class="btn ghost" id="linkHub" href="../index.html" style="text-decoration:none;min-width:0">🎮 Daftar Game</a>
+  <div class="hint warn hidden" id="secureWarn">⚠️ Halaman ini tidak dibuka lewat HTTPS, jadi kamera dan sensor kemungkinan diblokir browser. Mode sentuhan tetap bisa dipakai.</div>
+</div>
+
+<div class="overlay hidden" id="over">
+  <h2 id="overTitle">GAME OVER</h2>
+  <div class="big" id="overScore">0</div>
+  <p id="overBest">Skor terbaik: 0</p>
+  <div class="lb hidden" id="lbBox"><div class="lbt" id="lbTitle">🏆 PERINGKAT GLOBAL</div><div class="lbn hidden" id="lbForm"><input id="lbName" maxlength="16" placeholder="Nama kamu (maks. 16)" autocomplete="off"><button class="btn-sm" id="lbSave" type="button">Kirim skor</button></div><div class="lbmsg" id="lbMsg"></div><ol id="lbList"></ol></div>
+  <button class="btn cam" id="btnAgainCam">📷 Main Lagi (Kamera)</button>
+  <button class="btn alt" id="btnAgainSensor">🎮 Main Lagi (Sensor Miring)</button>
+  <button class="btn ghost" id="btnAgainTouch">👆 Main Lagi (Sentuhan)</button>
+  <button class="btn ghost" id="btnHome">🏠 Kembali ke Home</button>
+  <a class="btn ghost" href="../index.html" style="text-decoration:none;min-width:0">🎮 Daftar Game</a>
+</div>
+
+<div class="overlay hidden" id="camHelp">
+  <h2 style="font-size:42px;color:#9fe7ff;text-shadow:0 4px 0 #145f8a">KAMERA DITOLAK</h2>
+  <p id="camHelpMsg"></p>
+  <div class="help" id="camHelpSteps"></div>
+  <button class="btn cam" id="btnCamRetry">🔁 Coba Lagi</button>
+  <button class="btn" id="btnCamTouch">👆 Main pakai Sentuhan</button>
+  <button class="btn ghost" id="btnCamMenu">🏠 Menu</button>
+</div>
+
+<div class="overlay hidden" id="paused">
+  <h2 style="color:#ffd23f;text-shadow:0 4px 0 #7a3b00">JEDA</h2>
+  <button class="btn" id="btnFinish">🏁 Selesai (simpan skor)</button>
+  <button class="btn alt" id="btnResume">▶ Lanjut</button>
+  <button class="btn" id="btnQuit">🏠 Menu</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="../shared/camguide.js"></script>
+<script src="../shared/leaderboard.js"></script>
+<script src="js/00-dasar.js"></script>
+<script src="js/01-layout.js"></script>
+<script src="js/02-audio.js"></script>
+<script src="js/02b-musik.js"></script>
+<script src="js/03-game-data.js"></script>
+<script src="js/04-blades.js"></script>
+<script src="js/05-sensors.js"></script>
+<script src="js/06-camera-pelacakan-jari.js"></script>
+<script src="js/07-bantuan-saat-kamera.js"></script>
+<script src="js/08-touch.js"></script>
+<script src="js/09-ui.js"></script>
+<script src="js/09b-arcade-boss.js"></script>
+<script src="js/10-update.js"></script>
+<script src="js/11-draw.js"></script>
+<script src="js/12-loop.js"></script>
+<script src="../shared/menu.js"></script>
+<script>/* hitung "dimainkan" global (sekali per tab per game) */(function(){try{var s=location.pathname.split('/').filter(Boolean);if(s.length&&/\.html?$/i.test(s[s.length-1]))s.pop();var g=s.pop();if(!g)return;var k='played_'+g;if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1');fetch('../api/hit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:g+'/'}),keepalive:true}).catch(function(){})}catch(e){}})();</script>
+<script src="js/99-preview.js"></script>
+</body>
+</html>

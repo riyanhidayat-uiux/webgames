@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#06110a">
+<title>Tendangan Penalti Sensor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bangers&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="../shared/menu.css">
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="dim"></div>
+<div id="camBox" class="hidden"><video id="bgVideo" playsinline muted autoplay></video><canvas id="skel" width="240" height="320"></canvas><div class="camlab" id="camLab"></div><div class="spdbar"><i id="spdFill"></i><b id="spdThr"></b></div></div>
+<div class="hud hidden" id="hud">
+  <div class="tv" id="tv">
+    <div class="tvrow" id="tvr0"><span class="tn" id="tn0">KAMU</span><span class="ts" id="ts0">0</span><span class="td" id="td0"></span></div>
+    <div class="tvrow" id="tvr1"><span class="tn" id="tn1">LAWAN</span><span class="ts" id="ts1">0</span><span class="td" id="td1"></span></div>
+    <div class="tvinfo" id="tvInfo"></div>
+  </div>
+  <div class="speedTag hidden" id="speedTag"></div>
+  <div class="bigmsg" id="bigMsg"></div>
+  <div class="cmt" id="cmt"></div>
+</div>
+<div class="power hidden" id="power"><div class="pbar"><i id="powerFill"></i></div><span>TENAGA</span></div>
+<div class="reticle hidden" id="reticle"></div>
+<div class="help hidden" id="help"></div>
+<div class="replayTag hidden" id="replayTag">⏪ ULANGAN <small>(tekan Spasi / ketuk untuk lewati)</small></div>
+<div id="calibBox" class="hidden"><div class="t">KALIBRASI</div><div class="s" id="calS"></div><div class="b2"><i id="calBar"></i></div></div>
+<div class="btns hidden" id="gameBtns"><button class="btn-sm hidden" id="btnCal">🎯 Kalibrasi</button><button class="btn-sm" id="btnMute">🔊</button><button class="btn-sm" id="btnPause">⏸</button></div>
+
+<div class="overlay" id="menu">
+  <h1>PENALTI<small>ADU TENDANGAN SENSOR</small></h1>
+  <p>Berdirilah seperti pemain sungguhan! <b>Tunjuk sasaran dengan tangan</b>, lalu <b>tendang</b> di depan kamera. Kecepatan ayunan kaki jadi tenaga, dan arah ayunan membuat bola melengkung. Saat bertahan, <b>menyelamlah</b> dengan memiringkan badan!</p>
+  <div class="tips"><div class="tip"><b>👉</b>Tunjuk gawang<br>= bidik</div><div class="tip"><b>🦵</b>Ayun kaki<br>= tendang</div><div class="tip"><b>↗️</b>Kaki miring<br>= bola lengkung</div><div class="tip"><b>🧤</b>Miring badan<br>= selam kiper</div></div>
+  <div class="modes" id="modeBox"></div>
+  <div class="modes" id="skillBox"></div>
+  <div class="modes" id="teamBox"></div>
+  <div class="modes" id="atmoBox"></div>
+  <button class="btn" id="btnCam">📷 Main Pakai Kamera (Tubuh)</button>
+  <button class="btn alt" id="btnKey">🖱️ Main Pakai Mouse / Keyboard</button>
+  <details class="camset"><summary>⚙️ Pengaturan</summary><div id="csMenu"></div></details>
+  <div class="hint">Berdirilah ±2,5–3 meter dari kamera sampai <b>seluruh badan sampai kaki</b> terlihat. Saat membidik, <b>rentangkan satu tangan</b> ke arah sasaran di gawang (kanan-atas = pojok kanan atas). Mouse: gerakkan untuk membidik, <b>tahan klik</b> lalu lepas untuk menendang (Q/E = bola lengkung). Bertahan: ← → ↑ ↓ atau Spasi.</div>
+  <div class="warn hidden" id="menuMsg"></div>
+  <a class="btn ghost" href="../index.html">🎮 Daftar Game</a>
+</div>
+<div class="overlay hidden" id="over">
+  <h2 id="overTitle">SELESAI</h2><div class="big2" id="overScore">0 - 0</div><p id="overInfo"></p><div id="overTable"></div>
+  <button class="btn" id="btnAgainCam">📷 Main Lagi (Kamera)</button><button class="btn alt" id="btnAgainKey">🖱️ Lagi (Mouse)</button><button class="btn ghost" id="btnHome">🏠 Menu</button><a class="btn ghost" href="../index.html">🎮 Daftar Game</a>
+</div>
+<div class="overlay hidden" id="paused"><h2>JEDA</h2><details class="camset"><summary>⚙️ Pengaturan</summary><div id="csPause"></div></details><button class="btn" id="btnResume">▶ Lanjut</button><button class="btn ghost" id="btnQuit">🏠 Menu</button></div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>if (typeof THREE === 'undefined') { var mm = document.getElementById('menuMsg'); mm.textContent = 'Gagal memuat Three.js (butuh internet). Periksa koneksi lalu muat ulang halaman.'; mm.classList.remove('hidden'); }</script>
+<script src="../shared/camguide.js"></script>
+<script src="js/00-dasar.js"></script>
+<script src="js/01-scene-stadion.js"></script>
+<script src="js/02-karakter.js"></script>
+<script src="js/03-bola-fisika.js"></script>
+<script src="js/04-kiper-ai.js"></script>
+<script src="js/05-audio.js"></script>
+<script src="js/06-alur-adu-penalti.js"></script>
+<script src="js/07-kontrol-mouse-keyboard.js"></script>
+<script src="js/08-kamera-tubuh.js"></script>
+<script src="js/09-menu-pengaturan.js"></script>
+<script src="js/10-hud-kamera-loop.js"></script>
+<script src="../shared/menu.js"></script>
+<script>/* hitung "dimainkan" global (sekali per tab per game) */(function(){try{var s=location.pathname.split('/').filter(Boolean);if(s.length&&/\.html?$/i.test(s[s.length-1]))s.pop();var g=s.pop();if(!g)return;var k='played_'+g;if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1');fetch('../api/hit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:g+'/'}),keepalive:true}).catch(function(){})}catch(e){}})();</script>
+</body>
+</html>

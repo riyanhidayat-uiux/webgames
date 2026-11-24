@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#140a2e">
+<title>Lubang di Dinding Sensor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bangers&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#140a2e;touch-action:none;-webkit-user-select:none;user-select:none;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#fff}
+  canvas#gl{position:fixed;inset:0;width:100%;height:100%;display:block}
+  .hud{position:fixed;top:0;left:0;right:0;padding:calc(env(safe-area-inset-top) + 10px) 16px 0;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;font-family:Bangers,Impact,"Arial Black",sans-serif}
+  .score{font-size:46px;line-height:1;color:#ffd23f;text-shadow:0 3px 0 #7a3b00,0 0 16px rgba(255,200,60,.5);letter-spacing:1px}
+  .sub{font-size:17px;color:#e0d4ff;letter-spacing:1px;margin-top:3px}
+  .combo{font-size:22px;color:#7fffd0;text-shadow:0 2px 0 #0a5a48;margin-top:2px}
+  .right{text-align:right}
+  .lives{font-size:30px;line-height:1;letter-spacing:2px}
+  .lives span{display:inline-block;color:#ff3b6a;text-shadow:0 2px 0 #5a0020;transition:transform .25s,color .25s}
+  .lives span.lost{color:rgba(255,255,255,.18);text-shadow:none;transform:scale(.8)}
+  #hint{position:fixed;top:calc(env(safe-area-inset-top) + 118px);left:12px;width:112px;text-align:center;pointer-events:none;background:rgba(10,6,30,.62);border:1px solid rgba(255,255,255,.25);border-radius:14px;padding:6px 6px 8px}
+  #hint canvas{display:block;margin:0 auto;width:84px;height:98px}
+  #hint2{position:fixed;top:calc(env(safe-area-inset-top) + 118px);right:12px;width:112px;text-align:center;pointer-events:none;background:rgba(10,6,30,.62);border:1px solid rgba(255,255,255,.25);border-radius:14px;padding:6px 6px 8px}
+  #hint2 canvas{display:block;margin:0 auto;width:84px;height:98px}
+  #hintName2{font-family:Bangers,Impact,sans-serif;font-size:22px;color:#6fc8ff;letter-spacing:1px;margin-top:2px}
+  #hintBar2{height:6px;border-radius:4px;background:rgba(255,255,255,.18);overflow:hidden;margin-top:4px}#hintBar2 i{display:block;height:100%;width:0;background:linear-gradient(90deg,#6fc8ff,#a06aff)}
+  #hint.vs{border-color:#ffa23c}#hint2{border-color:#38b8ff}
+  #hintName{font-family:Bangers,Impact,sans-serif;font-size:22px;color:#7fffd0;letter-spacing:1px;margin-top:2px}
+  #hintBar{height:6px;border-radius:4px;background:rgba(255,255,255,.18);overflow:hidden;margin-top:4px}#hintBar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffd23f,#ff5a3c)}
+  .msg{position:fixed;left:0;right:0;top:30%;text-align:center;pointer-events:none;font-family:Bangers,Impact,sans-serif;font-size:clamp(46px,12vw,110px);letter-spacing:2px;color:#fff;text-shadow:0 5px 0 #140a2e,0 0 30px rgba(160,120,255,.8);opacity:0}
+  .msg.show{animation:msg 1s ease-out forwards}
+  .msg.half{top:36%;font-size:clamp(28px,6.5vw,64px);width:50%}.msg.half.l{left:0;right:auto}.msg.half.r{left:auto;right:0}
+  @keyframes msg{0%{opacity:0;transform:scale(.4)}18%{opacity:1;transform:scale(1.2)}32%{transform:scale(1)}80%{opacity:1}100%{opacity:0;transform:translateY(-24px)}}
+  .count{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;font-family:Bangers,Impact,sans-serif;font-size:150px;color:#fff;text-shadow:0 6px 0 #5a2ab0,0 0 40px rgba(160,120,255,.8)}
+  .count.go{animation:cnt .5s ease-out}
+  @keyframes cnt{from{transform:scale(2);opacity:0}to{transform:scale(1);opacity:1}}
+  .flash{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 40%,rgba(255,40,80,.55));opacity:0}
+  .flash.on{animation:fl .5s ease-out}
+  @keyframes fl{0%{opacity:1}100%{opacity:0}}
+  .btns{position:fixed;right:12px;bottom:calc(env(safe-area-inset-bottom) + 12px);display:flex;gap:8px}
+  .btn-sm{background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:999px;padding:9px 14px;font-size:14px;font-family:inherit;cursor:pointer}
+  #presetBar{position:fixed;left:8px;right:120px;bottom:calc(env(safe-area-inset-bottom) + 10px);display:flex;gap:6px;overflow-x:auto;padding:4px;scrollbar-width:none}
+  #presetBar::-webkit-scrollbar{display:none}
+  #presetBar button{flex:0 0 auto;width:58px;background:rgba(10,6,30,.7);border:1px solid rgba(255,255,255,.3);border-radius:10px;padding:3px 2px 2px;color:#e0d4ff;font-size:10px;cursor:pointer}
+  #presetBar button.on{border-color:#7fffd0;box-shadow:0 0 10px rgba(127,255,208,.6);color:#fff}
+  #presetBar canvas{display:block;width:44px;height:50px;margin:0 auto}
+  .overlay{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;background:radial-gradient(ellipse at center,rgba(20,10,50,.55),rgba(8,4,24,.94));gap:14px;overflow:auto}
+  .hidden{display:none!important}
+  h1{font-family:Bangers,Impact,"Arial Black",sans-serif;font-weight:400;font-size:clamp(46px,13vw,96px);margin:0 0 6px;line-height:.9;color:#ffd23f;text-shadow:0 5px 0 #a33a00,0 12px 26px rgba(0,0,0,.6);letter-spacing:2px;transform:rotate(-3deg)}
+  h1 small{display:block;font-size:.42em;color:#9f8aff;text-shadow:0 3px 0 #3a2a80;letter-spacing:3px}
+  h2{font-family:Bangers,Impact,"Arial Black",sans-serif;font-weight:400;font-size:56px;margin:0;color:#ff5a8a;text-shadow:0 4px 0 #5a0d2a;letter-spacing:2px}
+  .big{font-family:Bangers,Impact,sans-serif;font-size:72px;color:#ffd23f;text-shadow:0 4px 0 #7a3b00;line-height:1}
+  p{max-width:430px;margin:0;color:#ddd2ff;line-height:1.45;font-size:15px}
+  .btn{font-family:Bangers,Impact,"Arial Black",sans-serif;font-size:26px;letter-spacing:1px;padding:14px 26px;border:0;border-radius:16px;color:#2a1200;background:linear-gradient(#ffe066,#ffb000);box-shadow:0 5px 0 #a35f00,0 10px 20px rgba(0,0,0,.4);min-width:250px;cursor:pointer;text-decoration:none;display:inline-block}
+  .btn:active{transform:translateY(3px);box-shadow:0 2px 0 #a35f00}
+  .btn.cam{background:linear-gradient(#9fe7ff,#2fa8e8);box-shadow:0 5px 0 #145f8a,0 10px 20px rgba(0,0,0,.4);color:#02263a}
+  .btn.ghost{font-size:20px;padding:10px 20px;min-width:0;background:rgba(255,255,255,.12);color:#ddd2ff;box-shadow:none;border:1px solid rgba(255,255,255,.25)}
+  .btn.tiny{font-size:16px;padding:6px 14px;min-width:0}
+  .btn.mode{font-size:18px;padding:8px 16px;min-width:0;background:rgba(255,255,255,.12);color:#ddd2ff;box-shadow:none;border:1px solid rgba(255,255,255,.25)}
+  .btn.mode.on{background:linear-gradient(#ffe066,#ffb000);color:#2a1200;border-color:#ffb000}
+  .modes{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+  .pbox .pn{font-size:15px;letter-spacing:2px}.pbox.p1 .pn,.pbox.p1 .score{color:#ffb35a}.pbox.p2 .pn,.pbox.p2 .score{color:#6fc8ff}.pbox.p2{text-align:right}
+  .hud.vs .score{font-size:40px}.hud.vs .lives{font-size:24px;margin-top:4px}.hud .mid{text-align:center;padding-top:6px}
+  #presetBar.vs{right:auto;width:calc(50% - 14px)}#presetBar2{position:fixed;right:122px;bottom:calc(env(safe-area-inset-bottom) + 10px);width:calc(50% - 134px);display:flex;gap:6px;overflow-x:auto;padding:4px;scrollbar-width:none}
+  #presetBar2::-webkit-scrollbar{display:none}
+  #presetBar2 button{flex:0 0 auto;width:58px;background:rgba(10,6,30,.7);border:1px solid rgba(255,255,255,.3);border-radius:10px;padding:3px 2px 2px;color:#e0d4ff;font-size:10px;cursor:pointer}
+  #presetBar2 button.on{border-color:#6fc8ff;box-shadow:0 0 10px rgba(111,200,255,.6);color:#fff}
+  #presetBar2 canvas{display:block;width:44px;height:50px;margin:0 auto}
+  #presetBar.vs button.on{border-color:#ffb35a;box-shadow:0 0 10px rgba(255,179,90,.6)}
+  .tips{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-width:430px;width:100%}
+  .tip{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:8px 4px;font-size:12px;line-height:1.3}
+  .tip b{display:block;font-size:26px;margin-bottom:2px}
+  details.camset{max-width:430px;width:100%;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:8px 14px;text-align:left;font-size:14px;color:#ddd2ff}
+  details.camset summary{cursor:pointer;padding:4px 0;font-weight:600}
+  .cs{margin:12px 0}.cs .row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .cs input[type=range]{width:150px;accent-color:#ffb000}.cs .val{min-width:34px;text-align:right;color:#ffd23f}
+  .cs small{display:block;opacity:.65;font-size:12px;margin-top:2px}
+  .cs label.chk{display:flex;justify-content:space-between;align-items:center;width:100%}.cs input[type=checkbox]{width:20px;height:20px;accent-color:#ffb000}
+  .hint{font-size:12.5px;opacity:.78;max-width:430px;line-height:1.4}
+  .warn{color:#ffb38a;font-size:13.5px;max-width:430px;line-height:1.4}
+  #camBox{position:fixed;left:12px;bottom:calc(env(safe-area-inset-bottom) + 12px);width:min(40vw,230px);border-radius:12px;overflow:hidden;border:2px solid rgba(255,90,60,.9);background:#000;pointer-events:none}
+  #camBox.has{border-color:rgba(127,255,106,.95)}
+  #camBox video{display:block;width:100%;transform:scaleX(-1)}
+  #camBox canvas{position:absolute;inset:0;width:100%;height:100%}
+  #calibBox{position:fixed;left:50%;top:26%;transform:translateX(-50%);width:min(86vw,400px);background:rgba(0,0,0,.74);border:1px solid rgba(255,255,255,.25);border-radius:16px;padding:14px 18px;text-align:center;pointer-events:none}
+  #calibBox .t{font-family:Bangers,Impact,sans-serif;font-size:28px;color:#ffd23f;letter-spacing:1px}
+  #calibBox .s{font-size:14px;margin:6px 0 10px;color:#ddd2ff;line-height:1.4}
+  #calibBox .bar{height:10px;border-radius:6px;background:rgba(255,255,255,.15);overflow:hidden}#calibBox .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#9f8aff,#7fff6a);transition:width .1s}
+  .toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 150px);transform:translateX(-50%);background:rgba(0,0,0,.78);padding:10px 16px;border-radius:12px;font-size:14px;max-width:84%;text-align:center;transition:opacity .4s;pointer-events:none;opacity:0}
+  .toast.show{opacity:1}
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div class="hud hidden" id="hud">
+  <div><div class="score" id="score">0</div><div class="sub" id="wallHud">DINDING 0</div><div class="combo" id="comboHud"></div></div>
+  <div class="right"><div class="lives" id="lives"></div><div class="sub" id="bestHud"></div></div>
+</div>
+<div class="hud vs hidden" id="hudVs">
+  <div class="pbox p1"><div class="pn">P1 ●</div><div class="score" id="vs1">0</div><div class="lives" id="vl1"></div><div class="combo" id="vc1"></div></div>
+  <div class="mid"><div class="sub" id="wallHud2">DINDING 0</div></div>
+  <div class="pbox p2"><div class="pn">● P2</div><div class="score" id="vs2">0</div><div class="lives" id="vl2"></div><div class="combo" id="vc2"></div></div>
+</div>
+<div id="hint" class="hidden"><canvas id="hintC" width="192" height="224"></canvas><div id="hintName"></div><div id="hintBar"><i id="hintFill"></i></div></div>
+<div id="hint2" class="hidden"><canvas id="hintC2" width="192" height="224"></canvas><div id="hintName2"></div><div id="hintBar2"><i id="hintFill2"></i></div></div>
+<div class="msg" id="msg"></div><div class="msg half l hidden" id="msg1"></div><div class="msg half r hidden" id="msg2"></div>
+<div class="flash" id="flash"></div>
+<div class="count hidden" id="count"></div>
+<div id="camBox" class="hidden"><video id="camVideo" playsinline muted autoplay></video><canvas id="skel" width="320" height="240"></canvas></div>
+<div id="calibBox" class="hidden"><div class="t">KALIBRASI</div><div class="s" id="calS"></div><div class="bar"><i id="calBar"></i></div><div class="s" id="calS2" style="margin-top:12px"></div><div class="bar" id="calBarBox2"><i id="calBar2"></i></div></div>
+<div id="presetBar" class="hidden"></div><div id="presetBar2" class="hidden"></div>
+<div class="btns hidden" id="gameBtns"><button class="btn-sm hidden" id="btnCal">🎯 Kalibrasi</button><button class="btn-sm" id="btnMute">🔊</button><button class="btn-sm" id="btnPause">⏸</button></div>
+
+<div class="overlay" id="menu">
+  <h1>LUBANG DI DINDING<small>SENSOR TUBUH</small></h1>
+  <p>Dinding bersiluet pose bergerak ke arahmu. <b>Tirukan posenya</b> dengan badanmu supaya muat melewati lubang — seperti game Kinect!</p>
+  <div class="tips">
+    <div class="tip"><b>🧍</b>Lihat pose di<br>kotak atas</div>
+    <div class="tip"><b>🙆</b>Tiru dengan<br>seluruh lengan</div>
+    <div class="tip"><b>🟢</b>Sendi hijau =<br>pas di lubang</div>
+    <div class="tip"><b>❤️</b>3 nyawa,<br>makin cepat</div>
+  </div>
+  <div class="modes"><button class="btn mode on" id="btnM1">👤 1 Player</button><button class="btn mode" id="btnM2">👥 2 Player</button></div>
+  <div class="hint hidden" id="vsHelp"><b>2 Player:</b> berdirilah <b>berdampingan</b> di depan kamera (jarak antar badan ±1 meter supaya lengan bisa direntangkan). Dinding punya <b style="color:#ffb35a">satu lubang untuk tiap pemain</b> dengan pose masing-masing: <b style="color:#ffb35a">P1 di kiri</b>, <b style="color:#6fc8ff">P2 di kanan</b>. Skor dan 3 ❤ sendiri-sendiri, dan kalau keduanya SEMPURNA, ada bonus <b>KOMPAK +50</b>. Tanpa kamera: P1 pakai tombol pose di kiri (angka / A,D), P2 di kanan (panah ◀ ▶).</div>
+  <div class="modes" id="diffBox"><button class="btn mode" data-d="0">😊 Mudah</button><button class="btn mode on" data-d="1">😎 Normal</button><button class="btn mode" data-d="2">🔥 Sulit</button></div>
+  <button class="btn cam" id="btnCam">📷 Main pakai Kamera (Tubuh)</button>
+  <button class="btn" id="btnKey">🖱️ Main tanpa Kamera (tombol pose)</button>
+  <details class="camset"><summary>⚙️ Pengaturan</summary><div id="csMenu"></div></details>
+  <div class="hint">Berdirilah ±2–3 meter dari kamera dengan <b>badan bagian atas</b> terlihat jelas (kepala, kedua lengan, dan pinggang), ruangan terang, dan pakaian yang kontras dengan latar. Tanpa kamera: tekan tombol pose di bawah layar (atau angka 1–9, 0).</div>
+  <div class="warn hidden" id="menuMsg"></div>
+  <a class="btn ghost" href="../index.html">🎮 Daftar Game</a>
+</div>
+
+<div class="overlay hidden" id="over">
+  <h2 id="overTitle">GAME OVER</h2>
+  <div class="big" id="overScore">0</div>
+  <p id="overInfo"></p>
+  <button class="btn cam" id="btnAgainCam">📷 Main Lagi (Kamera)</button>
+  <button class="btn" id="btnAgainKey">🖱️ Main Lagi (Tombol Pose)</button>
+  <button class="btn ghost" id="btnHome">🏠 Menu</button>
+  <a class="btn ghost" href="../index.html">🎮 Daftar Game</a>
+</div>
+
+<div class="overlay hidden" id="paused">
+  <h2 style="color:#ffd23f;text-shadow:0 4px 0 #7a3b00">JEDA</h2>
+  <details class="camset" id="csPauseBox"><summary>⚙️ Pengaturan</summary><div id="csPause"></div></details>
+  <button class="btn" id="btnResume">▶ Lanjut</button>
+  <button class="btn ghost" id="btnQuit">🏠 Menu</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem('lubang_' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem('lubang_' + k, JSON.stringify(v)); } catch (e) {} }
+  };
+  if (typeof THREE === 'undefined') {
+    $('menuMsg').textContent = 'Gagal memuat Three.js (butuh internet). Periksa koneksi lalu muat ulang halaman.';
+    $('menuMsg').classList.remove('hidden');
+    return;
+  }
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const SET_DEF = { tol: 5 };
+  const settings = Object.assign({ mute: false, prev: true, diff: 1 }, SET_DEF, store.get('settings', {}));
+  const saveSettings = () => store.set('settings', settings);
+
+  // ======================= MODEL POSE =======================
+  // satuan: 1 = lebar bahu; titik asal = tengah bahu; x kanan(+) di layar cermin, y atas(+)
+  const LEN = { arm1: 0.75, arm2: 0.62, hand: 0.24, torso: 1.25, hipW: 0.7, thigh: 1.1, shin: 1.05, head: 0.58 };
+  const rad2 = d => d * Math.PI / 180;
+  const dirArm = (side, a) => side < 0 ? { x: -Math.sin(rad2(a)), y: -Math.cos(rad2(a)) } : { x: Math.sin(rad2(a)), y: -Math.cos(rad2(a)) };   // a: 0 = ke bawah, 90 = mendatar keluar, 180 = ke atas
+  function buildPose(spec, k) {
+    const L1 = LEN.arm1 * k.arm, L2 = LEN.arm2 * k.arm, T = LEN.torso * k.torso, lean = rad2(spec.lean || 0);
+    const ax = { x: Math.cos(lean), y: -Math.sin(lean) }, up = { x: Math.sin(lean), y: Math.cos(lean) };
+    const J = { c: { x: 0, y: 0 } };
+    J.sL = { x: -0.5 * ax.x, y: -0.5 * ax.y }; J.sR = { x: 0.5 * ax.x, y: 0.5 * ax.y };
+    J.nose = { x: up.x * LEN.head, y: up.y * LEN.head };
+    const hc = { x: -up.x * T, y: -up.y * T };
+    J.hL = { x: hc.x - LEN.hipW / 2 * ax.x, y: hc.y - LEN.hipW / 2 * ax.y }; J.hR = { x: hc.x + LEN.hipW / 2 * ax.x, y: hc.y + LEN.hipW / 2 * ax.y };
+    const arm = (side, s, a1, a2) => {
+      const d1 = dirArm(side, a1), d2 = dirArm(side, a2), e = { x: s.x + d1.x * L1, y: s.y + d1.y * L1 }, w = { x: e.x + d2.x * L2, y: e.y + d2.y * L2 };
+      return { e, w, h: { x: w.x + d2.x * LEN.hand, y: w.y + d2.y * LEN.hand } };
+    };
+    const aL = arm(-1, J.sL, spec.a[0], spec.a[1]), aR = arm(1, J.sR, spec.a[2], spec.a[3]);
+    J.eL = aL.e; J.wL = aL.w; J.hdL = aL.h; J.eR = aR.e; J.wR = aR.w; J.hdR = aR.h;
+    const sp = rad2(spec.leg || 0);
+    const leg = (side, h) => { const d = { x: side * Math.sin(sp), y: -Math.cos(sp) }, kn = { x: h.x + d.x * LEN.thigh, y: h.y + d.y * LEN.thigh }; return { kn, an: { x: kn.x + d.x * LEN.shin, y: kn.y + d.y * LEN.shin } }; };
+    const lL = leg(-1, J.hL), lR = leg(1, J.hR);
+    J.kL = lL.kn; J.aL = lL.an; J.kR = lR.kn; J.aR = lR.an;
+    return J;
+  }
+  const POSES = [
+    { id: 'tegak', name: 'TEGAK', tier: 1, spec: { a: [8, 8, 8, 8] } },
+    { id: 't', name: 'T', tier: 1, spec: { a: [90, 90, 90, 90] } },
+    { id: 'y', name: 'Y', tier: 1, spec: { a: [145, 145, 145, 145] } },
+    { id: 'hore', name: 'HORE!', tier: 1, spec: { a: [175, 175, 175, 175] } },
+    { id: 'kiriatas', name: 'KIRI ATAS', tier: 2, spec: { a: [175, 175, 8, 8] } },
+    { id: 'kananatas', name: 'KANAN ATAS', tier: 2, spec: { a: [8, 8, 175, 175] } },
+    { id: 'pinggang', name: 'PINGGANG', tier: 2, spec: { a: [50, -50, 50, -50] } },
+    { id: 'otot', name: 'OTOT', tier: 2, spec: { a: [90, 180, 90, 180] } },
+    { id: 'kepala', name: 'DI KEPALA', tier: 2, spec: { a: [100, -150, 100, -150] } },
+    { id: 'silang', name: 'SILANG', tier: 3, spec: { a: [40, -115, 40, -115] } },
+    { id: 'mirkiri', name: 'MIRING KIRI', tier: 3, spec: { a: [8, 8, 160, 160], lean: -24 } },
+    { id: 'mirkanan', name: 'MIRING KANAN', tier: 3, spec: { a: [160, 160, 8, 8], lean: 24 } },
+    { id: 'bintang', name: 'BINTANG', tier: 3, spec: { a: [140, 140, 140, 140], leg: 18 } }
+  ];
+  const BONES = [['sL', 'sR'], ['sL', 'eL'], ['eL', 'wL'], ['wL', 'hdL'], ['sR', 'eR'], ['eR', 'wR'], ['wR', 'hdR'], ['sL', 'hL'], ['sR', 'hR'], ['hL', 'hR'], ['hL', 'kL'], ['kL', 'aL'], ['hR', 'kR'], ['kR', 'aR'], ['c', 'nose']];
+  const KDEF = { arm: 1, torso: 1 };
+
+  // jarak titik ke bentuk lubang (0 = di dalam siluet inti)
+  const dSeg = (p, a, b) => { const dx = b.x - a.x, dy = b.y - a.y, l2 = dx * dx + dy * dy; let t = l2 ? ((p.x - a.x) * dx + (p.y - a.y) * dy) / l2 : 0; t = clamp(t, 0, 1); return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy)); };
+  function inQuad(p, q) { let s = 0; for (let i = 0; i < 4; i++) { const a = q[i], b = q[(i + 1) % 4], c = (b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x); if (c !== 0) { const sg = c > 0 ? 1 : -1; if (s === 0) s = sg; else if (s !== sg) return false; } } return true; }
+  function distToPose(p, J) {
+    let d = Math.max(0, Math.hypot(p.x - J.nose.x, p.y - J.nose.y) - 0.3);
+    if (inQuad(p, [J.sL, J.sR, J.hR, J.hL])) return 0;
+    for (const [a, b] of BONES) d = Math.min(d, dSeg(p, J[a], J[b]));
+    return d;
+  }
+  const holeRad = () => [0.52, 0.44, 0.36][settings.diff] + (settings.tol - 5) * 0.03;
+
+  // titik sampel tubuh pemain, dikelompokkan per bagian tubuh (kepala, badan, lengan kiri/kanan, kaki)
+  function samplePoints(B) {
+    const parts = { head: [], torso: [], armL: [], armR: [], leg: [] }, ok = n => B[n] && B[n].v > 0.3;
+    const mid = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }), cp = p => ({ x: p.x, y: p.y });
+    if (ok('nose')) parts.head.push(cp(B.nose));
+    for (const s of ['L', 'R']) {
+      const arm = parts['arm' + s];
+      if (ok('s' + s)) parts.torso.push(cp(B['s' + s]));
+      if (ok('e' + s)) { arm.push(cp(B['e' + s])); if (ok('s' + s)) arm.push(mid(B['s' + s], B['e' + s])); }
+      if (ok('w' + s)) { arm.push(cp(B['w' + s])); if (ok('e' + s)) { arm.push(mid(B['e' + s], B['w' + s])); arm.push({ x: B['w' + s].x + (B['w' + s].x - B['e' + s].x) * 0.3, y: B['w' + s].y + (B['w' + s].y - B['e' + s].y) * 0.3 }); } }
+      if (ok('h' + s)) { parts.torso.push(cp(B['h' + s])); if (ok('s' + s)) parts.torso.push(mid(B['s' + s], B['h' + s])); }
+      if (ok('k' + s) && B['k' + s].v > 0.55) parts.leg.push(cp(B['k' + s]));
+      if (ok('a' + s) && B['a' + s].v > 0.55) parts.leg.push(cp(B['a' + s]));
+    }
+    return parts;
+  }
+  // jarak titik ke kerangka pemain (0 jika di dalam badan)
+  function distToBody(p, B) {
+    const ok = n => B[n] && B[n].v > 0.3; let d = Infinity;
+    if (['sL', 'sR', 'hL', 'hR'].every(ok) && inQuad(p, [B.sL, B.sR, B.hR, B.hL])) return 0;
+    const segs = [['sL', 'sR'], ['sL', 'eL'], ['eL', 'wL'], ['wL', 'hdL'], ['sR', 'eR'], ['eR', 'wR'], ['wR', 'hdR'], ['sL', 'hL'], ['sR', 'hR'], ['hL', 'hR'], ['hL', 'kL'], ['kL', 'aL'], ['hR', 'kR'], ['kR', 'aR']];
+    for (const [a, b] of segs) if (ok(a) && ok(b)) d = Math.min(d, dSeg(p, B[a], B[b]));
+    if (ok('nose')) d = Math.min(d, Math.hypot(p.x - B.nose.x, p.y - B.nose.y) - 0.15);
+    return Math.max(0, d);
+  }
+  // titik kunci pose target per bagian: harus terisi tubuh pemain (siku, pergelangan, ujung tangan, kepala, kaki bila melebar)
+  function targetParts(J, spec) {
+    const mid = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }), parts = { head: [J.nose], armL: [], armR: [], leg: [] };
+    for (const s of ['L', 'R']) { parts['arm' + s].push(J['e' + s], J['w' + s], J['hd' + s], mid(J['s' + s], J['e' + s]), mid(J['e' + s], J['w' + s])); if (spec && spec.leg) parts.leg.push(J['k' + s], J['a' + s]); }
+    return parts;
+  }
+  // nilai kecocokan = bagian tubuh TERBURUK dari: (a) bagian itu muat di lubang, (b) titik kunci pose target di bagian itu terisi tubuh
+  function judgeFrac(B, J, rad, spec) {
+    const sp = samplePoints(B), tp = targetParts(J, spec); let worst = 1, n = 0;
+    for (const k in sp) n += sp[k].length; if (n < 6) return 0;
+    const lowerOK = ['kL', 'kR', 'aL', 'aR'].every(q => B[q] && B[q].v > 0.55);
+    for (const k in sp) { const pts = sp[k]; if (!pts.length) continue; let inn = 0; for (const p of pts) if (distToPose(p, J) <= rad * 1.05) inn++; worst = Math.min(worst, inn / pts.length); }
+    for (const k in tp) { if (k === 'leg' && !lowerOK) continue; const pts = tp[k]; if (!pts.length) continue; let cov = 0; for (const t of pts) if (distToBody(t, B) <= rad * 1.1) cov++; worst = Math.min(worst, cov / pts.length); }
+    return worst;
+  }
+
+  // ======================= THREE.JS =======================
+  const renderer = new THREE.WebGLRenderer({ canvas: $('gl'), antialias: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x140a2e);
+  scene.fog = new THREE.Fog(0x140a2e, 22, 62);
+  const camera = new THREE.PerspectiveCamera(46, 1, 0.1, 150);
+  camera.position.set(0, 0.7, 12.5); camera.lookAt(0, -0.7, 0);
+  scene.add(new THREE.HemisphereLight(0xc8b8ff, 0x201040, 0.9));
+  const key = new THREE.DirectionalLight(0xffffff, 0.7); key.position.set(3, 6, 10); scene.add(key);
+  const WHT = 7, WCY = -0.7, TUN_X = 8, TUN_TOP = 3.6, TUN_BOT = -4.2;
+  const mkCanvas = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
+  const mkTex = c => { const t = new THREE.CanvasTexture(c); t.anisotropy = 4; return t; };
+
+  // lorong: lantai berpola yang bergulir, dinding samping bergaris lampu
+  const floorTex = (() => {
+    const c = mkCanvas(128, 128), x = c.getContext('2d'); x.fillStyle = '#1c1140'; x.fillRect(0, 0, 128, 128);
+    x.strokeStyle = '#6a4ae0'; x.lineWidth = 3; x.strokeRect(1, 1, 126, 126); x.strokeStyle = 'rgba(160,130,255,.35)'; x.lineWidth = 1; x.beginPath(); x.moveTo(64, 0); x.lineTo(64, 128); x.moveTo(0, 64); x.lineTo(128, 64); x.stroke();
+    const t = mkTex(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(8, 28); return t;
+  })();
+  const sideTex = (() => {
+    const c = mkCanvas(64, 128), x = c.getContext('2d'); x.fillStyle = '#241450'; x.fillRect(0, 0, 64, 128);
+    x.fillStyle = '#7a5aff'; x.fillRect(0, 56, 64, 6); x.fillStyle = 'rgba(255,255,255,.7)'; x.fillRect(0, 58, 64, 2);
+    const t = mkTex(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1, 28); return t;
+  })();
+  const LEN_T = 90;
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(TUN_X * 2, LEN_T), new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.6 })); floor.rotation.x = -Math.PI / 2; floor.position.set(0, TUN_BOT, 12 - LEN_T / 2); scene.add(floor);
+  const ceil = new THREE.Mesh(new THREE.PlaneGeometry(TUN_X * 2, LEN_T), new THREE.MeshStandardMaterial({ color: 0x1a0f3c })); ceil.rotation.x = Math.PI / 2; ceil.position.set(0, TUN_TOP, 12 - LEN_T / 2); scene.add(ceil);
+  [-1, 1].forEach(sd => { const w = new THREE.Mesh(new THREE.PlaneGeometry(LEN_T, TUN_TOP - TUN_BOT), new THREE.MeshStandardMaterial({ map: sideTex, roughness: 0.7 })); w.rotation.y = -sd * Math.PI / 2; w.position.set(sd * TUN_X, (TUN_TOP + TUN_BOT) / 2, 12 - LEN_T / 2); scene.add(w); });
+  const lampMat = new THREE.MeshBasicMaterial({ color: 0xc8b8ff });
+  const lamps = [];
+  for (let i = 0; i < 14; i++) { const l = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.1, 0.5), lampMat); l.position.set(0, TUN_TOP - 0.06, 8 - i * 6.5); scene.add(l); lamps.push(l); }
+
+  // ---------- pemain ----------
+  let versus = false;
+  const OFFS = () => versus ? [-2.2, 2.2] : [0];
+  const NP = () => versus ? 2 : 1;
+  const mkPlayer = i => ({ i, B: { J: {}, valid: false, seen: 0 }, k: { arm: 1, torso: 1 }, score: 0, lives: 3, combo: 0, cleared: 0, perfects: 0, bestAcc: 0, preset: 0, alive: true, miss: 0, lastPose: -1 });
+  let PL = [mkPlayer(0)];
+
+  // ---------- dinding berlubang (satu lubang per pemain) ----------
+  const WALLCOLS = [[0x2fb8ff, 0x1a6ac0], [0xff5a9a, 0xc02a6a], [0xffb02a, 0xc06a1a], [0x7aff6a, 0x2aa04a], [0xb06aff, 0x6a2ac0]];
+  const shift = (J, dx) => { const o = {}; for (const n in J) o[n] = { x: J[n].x + dx, y: J[n].y }; return o; };
+  function drawWallTex(holes, rad, cols, WW) {
+    const PXU = 80, W = WW * PXU, H = WHT * PXU, c = mkCanvas(W, H), x = c.getContext('2d');
+    const g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#' + cols[0].toString(16).padStart(6, '0')); g.addColorStop(1, '#' + cols[1].toString(16).padStart(6, '0'));
+    x.fillStyle = g; x.fillRect(0, 0, W, H);
+    x.strokeStyle = 'rgba(255,255,255,.14)'; x.lineWidth = 2; for (let j = 0; j <= WHT; j++) { x.beginPath(); x.moveTo(0, j * PXU); x.lineTo(W, j * PXU); x.stroke(); } for (let i = 0; i <= WW; i++) { x.beginPath(); x.moveTo(i * PXU, 0); x.lineTo(i * PXU, H); x.stroke(); }
+    x.fillStyle = 'rgba(255,255,255,.35)'; for (let j = 0; j <= WHT; j++) for (let i = 0; i <= WW; i++) { x.beginPath(); x.arc(i * PXU, j * PXU, 3, 0, 6.283); x.fill(); }
+    const X = v => (v + WW / 2) * PXU, Y = v => (WCY + WHT / 2 - v) * PXU;
+    x.save(); x.globalCompositeOperation = 'destination-out'; x.fillStyle = '#000'; x.strokeStyle = '#000'; x.lineCap = 'round'; x.lineJoin = 'round'; x.lineWidth = 2 * rad * PXU;
+    for (const h of holes) {
+      const J = shift(h.J, h.off);
+      x.beginPath(); x.moveTo(X(J.sL.x), Y(J.sL.y)); x.lineTo(X(J.sR.x), Y(J.sR.y)); x.lineTo(X(J.hR.x), Y(J.hR.y)); x.lineTo(X(J.hL.x), Y(J.hL.y)); x.closePath(); x.fill(); x.stroke();
+      x.beginPath(); for (const [a, b] of BONES) { x.moveTo(X(J[a].x), Y(J[a].y)); x.lineTo(X(J[b].x), Y(J[b].y)); } x.stroke();
+      x.beginPath(); x.arc(X(J.nose.x), Y(J.nose.y), (0.3 + rad) * PXU, 0, 6.283); x.fill();
+    }
+    x.restore(); return mkTex(c);
+  }
+  function makeWall(poses, rad, idx) {
+    const WW = versus ? 12 : 8, offs = OFFS(), cols = WALLCOLS[idx % WALLCOLS.length], holes = [];
+    poses.forEach((pose, i) => { if (pose) holes.push({ pl: i, pose, J: buildPose(pose.spec, PL[i].k), off: offs[i], best: 0, done: false }); });
+    const g = new THREE.Group(), tex = drawWallTex(holes, rad, cols, WW);
+    const front = new THREE.Mesh(new THREE.PlaneGeometry(WW, WHT), new THREE.MeshStandardMaterial({ map: tex, alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.55, emissive: cols[1], emissiveIntensity: 0.18 }));
+    front.position.set(0, WCY, 0); g.add(front);
+    const back = new THREE.Mesh(new THREE.PlaneGeometry(WW, WHT), new THREE.MeshStandardMaterial({ map: tex, alphaTest: 0.5, side: THREE.DoubleSide, color: 0x555566 })); back.position.set(0, WCY, -0.3); g.add(back);
+    const pm = new THREE.MeshStandardMaterial({ color: cols[1], roughness: 0.6, emissive: cols[1], emissiveIntensity: 0.15 });
+    const addPanel = (w, h, x, y) => { if (w <= 0.01) return; const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.4), pm); m.position.set(x, y, -0.15); g.add(m); };
+    const sideW = TUN_X - WW / 2;
+    addPanel(sideW, TUN_TOP - TUN_BOT, -(WW / 2 + sideW / 2), (TUN_TOP + TUN_BOT) / 2); addPanel(sideW, TUN_TOP - TUN_BOT, WW / 2 + sideW / 2, (TUN_TOP + TUN_BOT) / 2);
+    addPanel(WW, TUN_TOP - (WCY + WHT / 2), 0, (TUN_TOP + WCY + WHT / 2) / 2); addPanel(WW, (WCY - WHT / 2) - TUN_BOT, 0, (TUN_BOT + WCY - WHT / 2) / 2);
+    g.userData = { tex, pm }; scene.add(g);
+    return { g, holes, rad, z: -34, done: false, tex, speed: 6, color: cols[1] };
+  }
+  function disposeWall(w) { scene.remove(w.g); w.tex.dispose(); w.g.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material && o.material !== w.g.userData.pm) o.material.dispose(); }); w.g.userData.pm.dispose(); }
+
+  // ---------- avatar kerangka 3D (satu per pemain, di bidang z = 0) ----------
+  const jMatOK = new THREE.MeshStandardMaterial({ color: 0x5aff8a, emissive: 0x108a3a }), jMatBad = new THREE.MeshStandardMaterial({ color: 0xff4a6a, emissive: 0x8a1030 }), jMatN = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x555577 });
+  const JNAMES = ['nose', 'sL', 'sR', 'eL', 'eR', 'wL', 'wR', 'hL', 'hR', 'kL', 'kR', 'aL', 'aR', 'hdL', 'hdR'];
+  const MARK_N = ['hdL', 'hdR', 'eL', 'eR'];
+  const upV = new THREE.Vector3(0, 1, 0), tv = new THREE.Vector3(), tq = new THREE.Quaternion(), av1 = new THREE.Vector3(), av2 = new THREE.Vector3();
+  function makeAvatar() {
+    const g = new THREE.Group(); scene.add(g);
+    const boneMat = new THREE.MeshStandardMaterial({ color: 0x38d8ff, emissive: 0x0a5a78, roughness: 0.4 });
+    const bones = BONES.map(() => { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 1, 10), boneMat); g.add(m); return m; });
+    const joints = {}; JNAMES.forEach(n => { const m = new THREE.Mesh(new THREE.SphereGeometry(n === 'nose' ? 0.3 : 0.16, 14, 10), jMatN); g.add(m); joints[n] = m; });
+    const tg = new THREE.BufferGeometry(); tg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(12), 3)); tg.setIndex([0, 1, 2, 0, 2, 3]);
+    const torsoMat = new THREE.MeshBasicMaterial({ color: 0x38d8ff, transparent: true, opacity: 0.28, side: THREE.DoubleSide }), torso = new THREE.Mesh(tg, torsoMat); g.add(torso);
+    const eyeMat = new THREE.MeshBasicMaterial({ color: 0x111122 }); [-1, 1].forEach(s => { const e = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 6), eyeMat); e.position.set(s * 0.1, 0.06, 0.28); joints.nose.add(e); });
+    const marks = MARK_N.map(() => { const m = new THREE.Mesh(new THREE.TorusGeometry(0.27, 0.045, 8, 24), new THREE.MeshBasicMaterial({ color: 0xff4a6a, transparent: true, opacity: 0.9 })); m.visible = false; g.add(m); return m; });
+    return {
+      g, setColor(hex, em) { boneMat.color.setHex(hex); boneMat.emissive.setHex(em); torsoMat.color.setHex(hex); },
+      update(P, hole, rad, tNow) {
+        const J = P.B.J, V = P.B.valid, pos = n => J[n] && J[n].v > 0.25;
+        BONES.forEach(([a, b], i) => { const m = bones[i]; if (!V || !pos(a) || !pos(b)) { m.visible = false; return; } m.visible = true;
+          av1.set(J[a].x, J[a].y, 0); av2.set(J[b].x, J[b].y, 0); tv.subVectors(av2, av1); const len = tv.length() || 0.001; m.position.copy(av1).addScaledVector(tv, 0.5); m.scale.set(1, len, 1); tq.setFromUnitVectors(upV, tv.normalize()); m.quaternion.copy(tq); });
+        JNAMES.forEach(n => { const m = joints[n]; if (!V || !pos(n)) { m.visible = false; return; } m.visible = true; m.position.set(J[n].x, J[n].y, 0); m.material = hole ? (distToPose(J[n], hole.J) <= rad * 1.05 ? jMatOK : jMatBad) : jMatN; });
+        MARK_N.forEach((n, i) => { const m = marks[i]; if (!hole || !V) { m.visible = false; return; } const t = hole.J[n], cov = distToBody(t, J) <= rad * 1.1; m.visible = true; m.position.set(t.x, t.y, 0.12); m.rotation.z = tNow * 2; m.material.color.setHex(cov ? 0x5aff8a : 0xff4a6a); m.scale.setScalar(n[0] === 'h' ? 1 : 0.7); });
+        const arr = tg.attributes.position.array, q = ['sL', 'sR', 'hR', 'hL'];
+        if (V && q.every(pos)) { q.forEach((n, i) => { arr[i * 3] = J[n].x; arr[i * 3 + 1] = J[n].y; arr[i * 3 + 2] = -0.02; }); tg.attributes.position.needsUpdate = true; torso.visible = true; } else torso.visible = false;
+      }
+    };
+  }
+  const AVS = [makeAvatar(), makeAvatar()];
+
+  // partikel
+  const PART = [];
+  for (let i = 0; i < 90; i++) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, 0.16), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true })); m.visible = false; scene.add(m); PART.push({ m, vx: 0, vy: 0, vz: 0, life: 0, max: 1, rx: 0, ry: 0 }); }
+  function burst(x, y, z, n, colors, speed = 5) {
+    for (const p of PART) { if (n <= 0) break; if (p.life > 0) continue; n--; const a = Math.random() * 6.283, e = Math.random() * 3 - 1, s = (0.4 + Math.random()) * speed;
+      p.vx = Math.cos(a) * s; p.vz = Math.abs(Math.sin(a)) * s * 1.2 + 2; p.vy = Math.sin(e) * s; p.life = p.max = 0.6 + Math.random() * 0.7; p.rx = Math.random() * 8; p.ry = Math.random() * 8;
+      p.m.position.set(x, y, z); p.m.material.color.set(colors[(Math.random() * colors.length) | 0]); p.m.visible = true; p.m.scale.setScalar(0.6 + Math.random() * 1.2); }
+  }
+
+  // ======================= AUDIO =======================
+  let AC = null, master = null;
+  function initAudio() { try { if (!AC) { AC = new (window.AudioContext || window.webkitAudioContext)(); master = AC.createGain(); master.gain.value = settings.mute ? 0 : 0.5; master.connect(AC.destination); } if (AC.state === 'suspended') AC.resume(); } catch (e) { AC = null; } }
+  function tone(dur, f0, f1, gain, type = 'sine', delay = 0) {
+    if (!AC || settings.mute) return; const t = AC.currentTime + delay, o = AC.createOscillator(), g = AC.createGain();
+    o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + 0.05);
+  }
+  const sfx = {
+    perfect() { [660, 880, 1100, 1480].forEach((f, i) => tone(0.14, f, f * 1.01, 0.18, 'triangle', i * 0.07)); },
+    good() { tone(0.14, 660, 990, 0.18, 'triangle'); tone(0.16, 990, 1320, 0.16, 'triangle', 0.09); },
+    ok() { tone(0.16, 520, 660, 0.16, 'triangle'); },
+    miss() { tone(0.35, 300, 70, 0.4, 'sawtooth'); tone(0.2, 140, 50, 0.4, 'square', 0.05); },
+    team() { [523, 659, 784, 1047, 1319].forEach((f, i) => tone(0.16, f, f * 1.01, 0.18, 'square', i * 0.06)); },
+    tick() { tone(0.08, 700, 700, 0.14, 'square'); }, over() { [392, 330, 262, 196].forEach((f, i) => tone(0.22, f, f * 0.98, 0.2, 'triangle', i * 0.16)); }
+  };
+
+  // ======================= STATE =======================
+  let state = 'menu', useCam = false, elapsed = 0, shake = 0, best = store.get('best', 0);
+  let walls = [], wallNo = 0, spawnGap = 0, dieT = 0, menuT = 0, winner = null;
+  const TRAVEL0 = 5.0, TRAVEL_MIN = 2.6;
+  const travelTime = () => Math.max(TRAVEL_MIN, TRAVEL0 - wallNo * 0.1 - settings.diff * 0.25);
+  const PCOLS = [[0xffa23c, 0x7a3a00], [0x38b8ff, 0x0a3a7a]], PTXT = ['#ffb35a', '#6fc8ff'];
+
+  function pickPose(pl) {
+    const n = Math.max(...PL.map(p => p.cleared)), tier = n < 4 ? 1 : n < 10 ? 2 : 3;
+    let pool = POSES.filter(p => p.tier <= tier);
+    if (n >= 4 && Math.random() < 0.65) pool = pool.filter(p => p.tier === tier);
+    let i, guard = 0; do { i = POSES.indexOf(pool[(Math.random() * pool.length) | 0]); } while (i === pl.lastPose && guard++ < 8);
+    pl.lastPose = i; return POSES[i];
+  }
+  function spawnWall() {
+    const poses = PL.map(pl => pl.alive ? pickPose(pl) : null);
+    const w = makeWall(poses, holeRad(), wallNo++); w.speed = 34 / travelTime(); walls.push(w);
+  }
+  const nearestHole = (pi) => { let bw = null; for (const w of walls) { if (w.done) continue; if (!bw || w.z > bw.z) bw = w; } return bw ? { w: bw, h: bw.holes.find(h => h.pl === pi) || null } : { w: null, h: null }; };
+
+  // ======================= HUD =======================
+  const show = (id, on) => $(id).classList.toggle('hidden', !on);
+  let toastTimer = 0;
+  function toast(msg, ms = 3000) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), ms); }
+  function say(text, color, pi = -1) {
+    const m = $(pi < 0 || !versus ? 'msg' : pi === 0 ? 'msg1' : 'msg2'); if (versus && pi >= 0) show(pi === 0 ? 'msg1' : 'msg2', true);
+    m.textContent = text; m.style.color = color || '#fff'; m.classList.remove('show'); void m.offsetWidth; m.classList.add('show');
+  }
+  const heartsHtml = pl => { let h = ''; for (let i = 0; i < 3; i++) h += `<span class="${i >= pl.lives ? 'lost' : ''}">❤</span>`; return h; };
+  function updateHud() {
+    if (versus) {
+      for (let i = 0; i < 2; i++) { const p = PL[i]; $('vs' + (i + 1)).textContent = p.score; $('vl' + (i + 1)).innerHTML = heartsHtml(p); $('vc' + (i + 1)).textContent = p.combo >= 2 ? '🔥 x' + Math.min(5, p.combo) : ''; }
+      $('wallHud2').textContent = 'DINDING ' + Math.max(...PL.map(p => p.cleared)); return;
+    }
+    const p = PL[0]; $('score').textContent = p.score; $('wallHud').textContent = 'DINDING ' + p.cleared; $('comboHud').textContent = p.combo >= 2 ? '🔥 COMBO x' + Math.min(5, p.combo) : '';
+    $('bestHud').textContent = 'TERBAIK ' + Math.max(best, p.score); $('lives').innerHTML = heartsHtml(p);
+  }
+  function drawIcon(ctx, w, h, J, col, lw) {
+    ctx.clearRect(0, 0, w, h); const sx = w / 5.2, sy = h / 6.2, X = v => w / 2 + v * sx, Y = v => h * 0.27 - v * sy;
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw;
+    ctx.globalAlpha = 0.25; ctx.beginPath(); ctx.moveTo(X(J.sL.x), Y(J.sL.y)); ctx.lineTo(X(J.sR.x), Y(J.sR.y)); ctx.lineTo(X(J.hR.x), Y(J.hR.y)); ctx.lineTo(X(J.hL.x), Y(J.hL.y)); ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
+    ctx.beginPath(); for (const [a, b] of BONES) { ctx.moveTo(X(J[a].x), Y(J[a].y)); ctx.lineTo(X(J[b].x), Y(J[b].y)); } ctx.stroke();
+    ctx.beginPath(); ctx.arc(X(J.nose.x), Y(J.nose.y), 0.3 * sx, 0, 6.283); ctx.fill();
+  }
+  const HINT = [{ box: 'hint', ctx: $('hintC').getContext('2d'), name: 'hintName', fill: 'hintFill', pose: null }, { box: 'hint2', ctx: $('hintC2').getContext('2d'), name: 'hintName2', fill: 'hintFill2', pose: null }];
+  function setHint(i, w, h) {
+    const H = HINT[i];
+    if (!w || !h) { if (H.pose) { H.pose = null; H.ctx.clearRect(0, 0, 192, 224); $(H.name).textContent = ''; } $(H.fill).style.width = '0%'; return; }
+    if (H.pose !== h.pose) { H.pose = h.pose; drawIcon(H.ctx, 192, 224, h.J, versus ? PTXT[i] : '#7fffd0', 9); $(H.name).textContent = h.pose.name; $(H.name).style.color = versus ? PTXT[i] : '#7fffd0'; }
+    $(H.fill).style.width = Math.round(clamp(1 - Math.abs(w.z) / 34, 0, 1) * 100) + '%';
+  }
+  // tombol pose (tanpa kamera): satu baris per pemain
+  function buildPresetBars() {
+    [['presetBar', 0], ['presetBar2', 1]].forEach(([id, pi]) => {
+      const bar = $(id); bar.innerHTML = '';
+      POSES.forEach((p, i) => { const b = document.createElement('button'), c = mkCanvas(88, 100); b.appendChild(c); b.appendChild(document.createTextNode((pi === 0 && i < 9 ? (i + 1) + ' ' : pi === 0 && i === 9 ? '0 ' : '') + p.name));
+        drawIcon(c.getContext('2d'), 88, 100, buildPose(p.spec, { arm: 1, torso: 1 }), '#cfc4ff', 5); b.onclick = () => { setPreset(pi, i); initAudio(); }; bar.appendChild(b); (p['btn' + pi] = b); });
+    });
+  }
+  function setPreset(pi, i) { if (!PL[pi]) return; PL[pi].preset = i; POSES.forEach((p, k) => { if (p['btn' + pi]) p['btn' + pi].classList.toggle('on', k === i); }); }
+  addEventListener('keydown', e => {
+    const k = e.key;
+    if (!useCam && state !== 'menu') {
+      const cyc = (pi, d) => setPreset(pi, (PL[pi].preset + d + POSES.length) % POSES.length), m = '1234567890'.indexOf(k);
+      if (m >= 0 && m < POSES.length) setPreset(0, m);
+      if (k === 'a' || k === 'A' || (!versus && k === 'ArrowLeft')) cyc(0, -1);
+      if (k === 'd' || k === 'D' || (!versus && k === 'ArrowRight')) cyc(0, 1);
+      if (versus && k === 'ArrowLeft') cyc(1, -1);
+      if (versus && k === 'ArrowRight') cyc(1, 1);
+    }
+    if (k === 'p' || k === 'Escape') { if (state === 'play') pauseGame(); else if (state === 'paused') resumeGame(); }
+  });
+
+  // ======================= KAMERA (POSE, 1-2 ORANG) =======================
+  const MP = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
+  const POSE_MODEL = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
+  const cam = { on: false, stream: null, lm: null, loading: null, lastVT: -1, lastTs: 0, has: false, lastCx: [null, null] };
+  const video = $('camVideo'), skel = $('skel'), sctx = skel.getContext('2d');
+  const calib = { samples: [[], []], done: [false, false] };
+  function loadPose() {
+    if (cam.lm) return Promise.resolve(cam.lm); if (cam.loading) return cam.loading;
+    cam.loading = (async () => {
+      const vision = await import(`${MP}/vision_bundle.mjs`), files = await vision.FilesetResolver.forVisionTasks(`${MP}/wasm`);
+      const opts = d => ({ baseOptions: { modelAssetPath: POSE_MODEL, delegate: d }, runningMode: 'VIDEO', numPoses: 2, minPoseDetectionConfidence: 0.5, minPosePresenceConfidence: 0.5, minTrackingConfidence: 0.5 });
+      try { cam.lm = await vision.PoseLandmarker.createFromOptions(files, opts('GPU')); } catch (e) { cam.lm = await vision.PoseLandmarker.createFromOptions(files, opts('CPU')); }
+      return cam.lm;
+    })();
+    cam.loading.catch(() => { cam.loading = null; }); return cam.loading;
+  }
+  const menuMsg = m => { const e = $('menuMsg'); e.textContent = m || ''; e.classList.toggle('hidden', !m); };
+  async function enableCamera() {
+    menuMsg('');
+    if (window.isSecureContext === false || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { menuMsg('Kamera hanya bisa dipakai lewat HTTPS (atau localhost) di browser yang mendukung. Pakai mode tanpa kamera dulu.'); return false; }
+    toast('Menyiapkan kamera & pendeteksi tubuh…', 9000);
+    try { if (!cam.stream) cam.stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30 } } }); video.srcObject = cam.stream; await video.play().catch(() => {}); }
+    catch (e) { stopCamera(); $('toast').classList.remove('show'); const n = e && e.name; menuMsg(n === 'NotAllowedError' || n === 'SecurityError' ? 'Izin kamera ditolak. Izinkan kamera untuk situs ini di pengaturan browser, lalu coba lagi.' : n === 'NotFoundError' ? 'Tidak ada kamera yang ditemukan di perangkat ini.' : 'Kamera tidak bisa dibuka (mungkin sedang dipakai aplikasi lain).'); return false; }
+    try { await loadPose(); } catch (e) { stopCamera(); $('toast').classList.remove('show'); menuMsg('Pendeteksi tubuh gagal diunduh. Pastikan internet tersambung dan cdn.jsdelivr.net / storage.googleapis.com tidak diblokir.'); return false; }
+    try { await cam.lm.setOptions({ numPoses: versus ? 2 : 1 }); } catch (e) {}
+    $('toast').classList.remove('show'); return true;
+  }
+  function stopCamera() { cam.on = false; cam.has = false; if (cam.stream) { for (const t of cam.stream.getTracks()) t.stop(); cam.stream = null; } video.srcObject = null; show('camBox', false); show('calibBox', false); }
+
+  const LMI = { nose: 0, sL: 11, sR: 12, eL: 13, eR: 14, wL: 15, wR: 16, hL: 23, hR: 24, kL: 25, kR: 26, aL: 27, aR: 28 };
+  // landmark kamera -> koordinat tubuh (satuan lebar bahu, asal tengah bahu, tampilan cermin)
+  function bodyFromLandmarks(h) {
+    const vw = video.videoWidth || 640, vh = video.videoHeight || 480;
+    const P = i => ({ x: (1 - h[i].x) * vw, y: h[i].y * vh, v: h[i].visibility == null ? 1 : h[i].visibility });
+    const raw = {}; for (const n in LMI) raw[n] = P(LMI[n]);
+    if (raw.sL.x > raw.sR.x) { for (const a of ['s', 'e', 'w', 'h', 'k', 'a']) { const t = raw[a + 'L']; raw[a + 'L'] = raw[a + 'R']; raw[a + 'R'] = t; } }
+    const sw = Math.hypot(raw.sR.x - raw.sL.x, raw.sR.y - raw.sL.y); if (sw < 14 || raw.sL.v < 0.4 || raw.sR.v < 0.4) return null;
+    const cx = (raw.sL.x + raw.sR.x) / 2, cy = (raw.sL.y + raw.sR.y) / 2, J = { c: { x: 0, y: 0, v: 1 } };
+    for (const n in raw) J[n] = { x: (raw[n].x - cx) / sw, y: -(raw[n].y - cy) / sw, v: raw[n].v };
+    for (const s of ['L', 'R']) { const w = J['w' + s], e = J['e' + s]; J['hd' + s] = { x: w.x + (w.x - e.x) * 0.38, y: w.y + (w.y - e.y) * 0.38, v: Math.min(w.v, e.v) }; }
+    return { J, sw, cxn: cx / vw };
+  }
+  function setBody(pi, J) {
+    const B = PL[pi].B;
+    for (const n in J) { const t = J[n], o = B.J[n]; if (!o) B.J[n] = { x: t.x, y: t.y, v: t.v }; else { const a = 0.55; o.x += (t.x - o.x) * a; o.y += (t.y - o.y) * a; o.v = t.v; } }
+    B.valid = true; B.seen = elapsed; PL[pi].miss = 0;
+  }
+  const SKB = [[11, 12], [11, 13], [13, 15], [12, 14], [14, 16], [11, 23], [12, 24], [23, 24], [23, 25], [24, 26], [25, 27], [26, 28]];
+  function drawSkeletons(list, asg) {
+    const W = skel.width, H = skel.height; sctx.clearRect(0, 0, W, H);
+    list.forEach(h => {
+      const idx = asg ? asg.findIndex(a => a && a.h === h) : -1, col = idx < 0 || !versus ? '#7fff6a' : (idx === 0 ? '#ffb35a' : '#6fc8ff');
+      sctx.strokeStyle = col; sctx.lineWidth = 3; sctx.lineCap = 'round';
+      for (const [a, b] of SKB) { const p = h[a], q = h[b]; if (!p || !q || (p.visibility != null && (p.visibility < 0.3 || q.visibility < 0.3))) continue; sctx.beginPath(); sctx.moveTo((1 - p.x) * W, p.y * H); sctx.lineTo((1 - q.x) * W, q.y * H); sctx.stroke(); }
+      sctx.fillStyle = '#ffd23f'; [0, 11, 12, 13, 14, 15, 16].forEach(i => { const p = h[i]; if (p && (p.visibility == null || p.visibility > 0.3)) { sctx.beginPath(); sctx.arc((1 - p.x) * W, p.y * H, 4, 0, 6.283); sctx.fill(); } });
+    });
+  }
+  // kalibrasi satu pemain: ukur panjang lengan & badan (tangan lurus di samping)
+  function calibStep(pi, J) {
+    const bar = $(pi === 0 ? 'calBar' : 'calBar2'), txt = $(pi === 0 ? 'calS' : 'calS2'), who = versus ? `P${pi + 1}: ` : '';
+    if (calib.done[pi]) { bar.style.width = '100%'; txt.textContent = who + 'Siap ✔'; return; }
+    const armOK = ['wL', 'wR', 'eL', 'eR'].every(n => J[n].v > 0.4);
+    if (!armOK) { calib.samples[pi] = []; bar.style.width = '0%'; txt.textContent = who + 'Lengan belum terlihat penuh. Turunkan tangan di samping badan dan mundur sedikit.'; return; }
+    const aL = Math.hypot(J.wL.x - J.sL.x, J.wL.y - J.sL.y), aR = Math.hypot(J.wR.x - J.sR.x, J.wR.y - J.sR.y);
+    const tor = (J.hL.v > 0.4 && J.hR.v > 0.4) ? Math.hypot((J.hL.x + J.hR.x) / 2, (J.hL.y + J.hR.y) / 2) : null, sm = calib.samples[pi];
+    sm.push({ arm: (aL + aR) / 2, tor, wy: (J.wL.y + J.wR.y) / 2 }); if (sm.length > 22) sm.shift();
+    const n = sm.length, arms = sm.map(s => s.arm), stable = Math.max(...arms) - Math.min(...arms) < 0.35 && sm[n - 1].wy < -0.4;
+    if (!stable) { calib.samples[pi] = sm.slice(-3); txt.textContent = who + 'Berdiri tegak, tangan lurus di samping badan, lalu diam sebentar…'; bar.style.width = '5%'; return; }
+    txt.textContent = who + 'Bagus! Tahan posisi ini…'; bar.style.width = Math.round(n / 22 * 100) + '%';
+    if (n >= 22) {
+      const med = a => a.slice().sort((x, y) => x - y)[a.length >> 1]; PL[pi].k.arm = clamp(med(arms) / (LEN.arm1 + LEN.arm2), 0.75, 1.3);
+      const ts = sm.map(s => s.tor).filter(v => v != null); PL[pi].k.torso = ts.length > 8 ? clamp(med(ts) / LEN.torso, 0.8, 1.25) : 1; calib.done[pi] = true;
+    }
+  }
+  function detectPose(now) {
+    if (!cam.on || !cam.lm || video.readyState < 2 || video.currentTime === cam.lastVT) return;
+    cam.lastVT = video.currentTime; cam.lastTs = Math.max(cam.lastTs + 1, now);
+    let res; try { res = cam.lm.detectForVideo(video, cam.lastTs); } catch (e) { return; }
+    const hs = (res && res.landmarks) || [];
+    const items = hs.map(h => ({ h, bd: bodyFromLandmarks(h) })).filter(o => o.bd);
+    // tentukan siapa P1 (paling kiri di layar cermin) dan P2
+    let asg = [null, null];
+    if (!versus) asg[0] = items.sort((a, b) => Math.abs(a.bd.cxn - 0.5) - Math.abs(b.bd.cxn - 0.5))[0] || null;
+    else if (items.length >= 2) { items.sort((a, b) => a.bd.cxn - b.bd.cxn); asg = [items[0], items[items.length - 1]]; }
+    else if (items.length === 1) {
+      const q = items[0], d = k => cam.lastCx[k] == null ? Infinity : Math.abs(q.bd.cxn - cam.lastCx[k]);
+      const i = (d(0) === Infinity && d(1) === Infinity) ? (q.bd.cxn < 0.5 ? 0 : 1) : (d(0) <= d(1) ? 0 : 1); asg[i] = q;
+    }
+    drawSkeletons(hs, asg);
+    const any = asg.some(a => a); if (cam.has !== any) { cam.has = any; $('camBox').classList.toggle('has', any); }
+    for (let i = 0; i < NP(); i++) {
+      const a = asg[i], pl = PL[i];
+      if (a) { cam.lastCx[i] = a.bd.cxn; setBody(i, a.bd.J); if (state === 'calib') calibStep(i, a.bd.J); }
+      else if (++pl.miss > 6) { pl.B.valid = false; if (state === 'calib') { calib.samples[i] = []; calib.done[i] = false; $(i === 0 ? 'calBar' : 'calBar2').style.width = '0%'; $(i === 0 ? 'calS' : 'calS2').textContent = (versus ? `P${i + 1}: ` : '') + 'Tubuh belum terlihat. Mundur sedikit sampai kepala, bahu, dan kedua lengan masuk layar.'; } }
+    }
+    if (state === 'calib' && PL.every((p, i) => i >= NP() || calib.done[i])) { show('calibBox', false); startCountdown(); }
+  }
+
+  // ======================= PENGATURAN =======================
+  const csInputs = [];
+  function buildSettings(box) {
+    const d = document.createElement('div'); d.className = 'cs';
+    d.innerHTML = '<div class="row"><label>Toleransi lubang</label><input type="range" min="1" max="10" step="1"><span class="val"></span></div><small>Tinggi = lubang lebih lebar (lebih mudah muat)</small>';
+    const inp = d.querySelector('input'), val = d.querySelector('.val'); inp.value = settings.tol; val.textContent = settings.tol; inp.oninput = () => { settings.tol = +inp.value; saveSettings(); sync(); };
+    csInputs.push({ inp, val }); box.appendChild(d);
+    const d2 = document.createElement('div'); d2.className = 'cs'; d2.innerHTML = '<label class="chk">Tampilkan pratinjau kamera <input type="checkbox"></label>';
+    const cb = d2.querySelector('input'); cb.checked = settings.prev; cb.onchange = () => { settings.prev = cb.checked; saveSettings(); applyPreview(); sync(); }; csInputs.push({ cb }); box.appendChild(d2);
+    const b = document.createElement('button'); b.className = 'btn ghost tiny'; b.textContent = '↺ Kembalikan standar'; b.onclick = () => { Object.assign(settings, SET_DEF); saveSettings(); sync(); }; box.appendChild(b);
+  }
+  function sync() { for (const x of csInputs) { if (x.cb) x.cb.checked = settings.prev; else { x.inp.value = settings.tol; x.val.textContent = settings.tol; } } }
+  function applyPreview() { $('camBox').style.opacity = settings.prev ? 1 : 0; }
+  buildSettings($('csMenu')); buildSettings($('csPause'));
+  $('diffBox').querySelectorAll('button').forEach(b => { b.classList.toggle('on', +b.dataset.d === settings.diff); b.onclick = () => { settings.diff = +b.dataset.d; saveSettings(); $('diffBox').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); }; });
+  function setVersus(v) { versus = v; $('btnM1').classList.toggle('on', !v); $('btnM2').classList.toggle('on', v); show('vsHelp', v); PL = (v ? [0, 1] : [0]).map(mkPlayer); }
+  $('btnM1').onclick = () => setVersus(false); $('btnM2').onclick = () => setVersus(true);
+
+  // ======================= ALUR GAME =======================
+  function resetRun() {
+    walls.forEach(disposeWall); walls = []; wallNo = 0; spawnGap = 0.4; shake = 0; winner = null;
+    PL = (versus ? [0, 1] : [0]).map(mkPlayer); PL.forEach((p, i) => { if (useCam) p.k = { arm: 1, torso: 1 }; });
+    PART.forEach(p => { p.life = 0; p.m.visible = false; }); setHint(0, null); setHint(1, null);
+    const cols = versus ? PCOLS : [[0x38d8ff, 0x0a5a78]]; AVS.forEach((a, i) => { a.setColor(...(cols[i] || cols[0])); a.g.visible = i < NP(); a.g.position.x = OFFS()[i] || 0; });
+    $('hint').classList.toggle('vs', versus); updateHud();
+  }
+  function startCountdown() {
+    state = 'count'; let n = 3; const c = $('count'); show('count', true);
+    const set = () => { c.textContent = n > 0 ? n : 'MULAI!'; c.classList.remove('go'); void c.offsetWidth; c.classList.add('go'); sfx.tick(); }; set();
+    const iv = setInterval(() => { if (state !== 'count') { clearInterval(iv); show('count', false); return; } n--; if (n < 0) { clearInterval(iv); show('count', false); state = 'play'; return; } set(); }, 800);
+  }
+  async function startGame(withCam) {
+    initAudio();
+    if (withCam) { const ok = await enableCamera(); if (!ok) return; } else stopCamera();
+    useCam = withCam; cam.on = withCam; cam.lastCx = [null, null]; cam.has = false; calib.samples = [[], []]; calib.done = [false, false];
+    resetRun();
+    show('menu', false); show('over', false); show('paused', false); show('hud', !versus); show('hudVs', versus); show('hint', true); show('hint2', versus); show('gameBtns', true); show('btnCal', withCam);
+    show('presetBar', !withCam); show('presetBar2', !withCam && versus); show('msg1', false); show('msg2', false); $('presetBar').classList.toggle('vs', versus);
+    if (!withCam) { buildPresetBars(); setPreset(0, 0); if (versus) setPreset(1, 0); }
+    if (withCam) {
+      show('camBox', true); applyPreview(); state = 'calib'; show('calibBox', true); show('calS2', versus); show('calBarBox2', versus);
+      $('calS').textContent = versus ? 'P1 (kiri) dan P2 (kanan): berdiri berdampingan ±2–3 meter dari kamera, tangan lurus di samping badan…' : 'Berdiri ±2–3 meter dari kamera, tegak, tangan lurus di samping badan…'; $('calBar').style.width = '0%'; $('calS2').textContent = versus ? 'P2: menunggu…' : ''; $('calBar2').style.width = '0%';
+      toast(versus ? 'Berdirilah berdampingan dengan jarak ±1 meter. P1 = orang di kiri layar, P2 = di kanan.' : 'Pastikan kepala, kedua lengan, dan pinggang terlihat di kotak pratinjau kiri bawah.', 5000);
+    } else { startCountdown(); toast(versus ? 'P1: tombol di kiri / angka · P2: tombol di kanan / panah ◀ ▶.' : 'Pilih pose dengan tombol di bawah layar (atau angka 1–9, 0, panah ◀ ▶).', 4000); }
+  }
+  function recalibrate() { if (!useCam || (state !== 'play' && state !== 'count')) return; calib.samples = [[], []]; calib.done = [false, false]; state = 'calib'; show('count', false); show('calibBox', true); show('calS2', versus); show('calBarBox2', versus); $('calS').textContent = 'Berdiri tegak, tangan lurus di samping badan…'; $('calBar').style.width = '0%'; $('calBar2').style.width = '0%'; }
+  function gameOver() {
+    state = 'over'; stopCamera(); sfx.over();
+    if (versus) {
+      const a = PL[0].score, b = PL[1].score; winner = a === b ? 'tie' : a > b ? 0 : 1;
+      $('overTitle').textContent = winner === 'tie' ? 'SERI!' : `🏆 P${winner + 1} MENANG!`; $('overScore').textContent = `${a} : ${b}`;
+      $('overInfo').textContent = `${Math.max(...PL.map(p => p.cleared))} dinding · sempurna P1 ${PL[0].perfects} / P2 ${PL[1].perfects}`;
+    } else {
+      const p = PL[0], nb = p.score > best; if (nb) { best = p.score; store.set('best', best); }
+      $('overTitle').textContent = nb && p.score > 0 ? 'REKOR BARU!' : 'GAME OVER'; $('overScore').textContent = p.score;
+      $('overInfo').textContent = `${p.cleared} dinding terlewati · ${p.perfects} sempurna · akurasi terbaik ${Math.round(p.bestAcc * 100)}% · terbaik ${best}`;
+    }
+    ['hud', 'hudVs', 'hint', 'hint2', 'gameBtns', 'presetBar', 'presetBar2', 'msg1', 'msg2'].forEach(i => show(i, false)); show('over', true);
+  }
+  function toMenu() { stopCamera(); state = 'menu'; walls.forEach(disposeWall); walls = []; ['paused', 'over', 'hud', 'hudVs', 'hint', 'hint2', 'gameBtns', 'count', 'calibBox', 'presetBar', 'presetBar2', 'msg1', 'msg2'].forEach(i => show(i, false)); show('menu', true); PL = (versus ? [0, 1] : [0]).map(mkPlayer); AVS.forEach((a, i) => { a.g.visible = i < NP(); a.g.position.x = OFFS()[i] || 0; a.setColor(...((versus ? PCOLS : [[0x38d8ff, 0x0a5a78]])[i] || [0x38d8ff, 0x0a5a78])); }); }
+  function pauseGame() { if (state !== 'play') return; state = 'paused'; show('csPauseBox', useCam); show('paused', true); }
+  function resumeGame() { if (state !== 'paused') return; show('paused', false); state = 'play'; }
+  $('btnCam').onclick = () => startGame(true); $('btnKey').onclick = () => startGame(false); $('btnAgainCam').onclick = () => startGame(true); $('btnAgainKey').onclick = () => startGame(false);
+  $('btnHome').onclick = toMenu; $('btnQuit').onclick = toMenu; $('btnPause').onclick = pauseGame; $('btnResume').onclick = resumeGame; $('btnCal').onclick = recalibrate;
+  const muteLabel = () => { $('btnMute').textContent = settings.mute ? '🔇' : '🔊'; };
+  $('btnMute').onclick = () => { settings.mute = !settings.mute; if (master) master.gain.value = settings.mute ? 0 : 0.5; saveSettings(); muteLabel(); }; muteLabel();
+  document.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(); });
+
+  // hasil satu dinding (per pemain)
+  function resolveWall(w) {
+    w.done = true; let allPerfect = w.holes.length > 0, anyMiss = false;
+    for (const h of w.holes) {
+      const p = PL[h.pl], a = h.best, off = h.off; h.done = true; p.bestAcc = Math.max(p.bestAcc, a);
+      if (a >= 0.78) {
+        p.combo++; const mult = Math.min(5, Math.max(1, p.combo)), grade = a >= 0.97 ? ['SEMPURNA!', 100, sfx.perfect, '#7fffd0'] : a >= 0.88 ? ['BAGUS!', 70, sfx.good, '#ffd23f'] : ['LOLOS', 40, sfx.ok, '#cfc4ff'];
+        const pts = grade[1] * mult; p.score += pts; p.cleared++; if (a >= 0.97) p.perfects++; else allPerfect = false; grade[2](); say(grade[0] + ' +' + pts, grade[3], h.pl);
+        burst(off, -0.5, 0.5, 26, ['#7fffd0', '#ffd23f', '#ffffff', '#ff7ad0'], 6);
+      } else {
+        allPerfect = false; anyMiss = true; p.combo = 0; p.lives--; shake = 1; sfx.miss(); say(a > 0.2 ? 'KENA DINDING!' : 'TIDAK TERDETEKSI', '#ff5a7a', h.pl); $('flash').classList.remove('on'); void $('flash').offsetWidth; $('flash').classList.add('on');
+        burst(off, -0.5, 0.5, 40, ['#ff5a7a', w.color, '#ffffff'], 8); try { navigator.vibrate && navigator.vibrate([80, 40, 160]); } catch (e) {}
+        if (p.lives <= 0) p.alive = false;
+      }
+    }
+    if (versus && allPerfect && w.holes.length === 2) { PL.forEach(p => { p.score += 50; }); say('KOMPAK! +50', '#ffe36a', -1); sfx.team(); burst(0, 0.5, 0.8, 40, ['#ffe36a', '#ffffff', '#ff7ad0'], 7); }
+    updateHud();
+    if (PL.every(p => !p.alive)) { state = 'dying'; dieT = 1.2; }
+  }
+
+  // ======================= UPDATE & RENDER =======================
+  function updateBodyFromPreset(pi, dt) {
+    const pl = PL[pi]; if (!pl) return; const J = buildPose(POSES[pl.preset].spec, { arm: 1, torso: 1 });
+    for (const n in J) { const t = J[n], o = pl.B.J[n]; if (!o) pl.B.J[n] = { x: t.x, y: t.y, v: 1 }; else { const a = Math.min(1, dt * 14); o.x += (t.x - o.x) * a; o.y += (t.y - o.y) * a; o.v = 1; } }
+    pl.B.valid = true; pl.B.seen = elapsed;
+  }
+  function updateWalls(dt) {
+    for (let i = walls.length - 1; i >= 0; i--) {
+      const w = walls[i]; w.z += w.speed * dt; w.g.position.z = w.z;
+      if (!w.done && w.z > -0.9 && w.z < 0.9) for (const h of w.holes) { const p = PL[h.pl]; if (p.B.valid) h.best = Math.max(h.best, judgeFrac(p.B.J, h.J, w.rad, h.pose.spec)); }
+      if (!w.done && w.z >= 0.9) resolveWall(w);
+      if (w.z > 9) { disposeWall(w); walls.splice(i, 1); }
+    }
+    spawnGap -= dt;
+    const farthest = walls.length ? Math.min(...walls.map(w => w.z)) : -99;
+    if (state === 'play' && spawnGap <= 0 && (walls.length === 0 || farthest > -34 + 34 * 0.55)) { spawnWall(); spawnGap = 0.5; }
+    for (let i = 0; i < 2; i++) { const nh = nearestHole(i); setHint(i, nh.w, nh.h); }
+  }
+  function render(dt) {
+    elapsed += dt;
+    floorTex.offset.y += (state === 'play' || state === 'dying' ? 7 : 1.2) * dt / 3; sideTex.offset.y = floorTex.offset.y;
+    lamps.forEach(l => { l.position.z += (state === 'play' ? 7 : 1.2) * dt; if (l.position.z > 10) l.position.z -= 91; });
+    for (const q of PART) { if (q.life <= 0) continue; q.life -= dt; if (q.life <= 0) { q.m.visible = false; continue; } q.vy -= 6 * dt; q.m.position.x += q.vx * dt; q.m.position.y += q.vy * dt; q.m.position.z += q.vz * dt; q.m.rotation.x += q.rx * dt; q.m.rotation.y += q.ry * dt; q.m.material.opacity = Math.min(1, q.life / q.max * 1.8); }
+    const rad = holeRad();
+    for (let i = 0; i < NP(); i++) { const pl = PL[i]; let hole = null; if (pl.alive) { const nw = walls.filter(w => !w.done && w.z > -7).sort((a, b) => b.z - a.z)[0]; hole = nw ? nw.holes.find(h => h.pl === i) || null : null; } AVS[i].update(pl, hole, rad, elapsed); }
+    shake = Math.max(0, shake - dt * 2.2); const sx = shake > 0 ? (Math.random() - 0.5) * shake * 0.5 : 0, sy = shake > 0 ? (Math.random() - 0.5) * shake * 0.4 : 0;
+    const asp = camera.aspect, back = Math.max(12.5, (versus ? 16.5 : 11.5) / asp + 0.5); camera.position.set(sx, 0.7 + sy, back); camera.lookAt(0, -0.7, 0);
+    renderer.render(scene, camera);
+  }
+  function resize() { renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
+  addEventListener('resize', resize);
+
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
+    detectPose(now);
+    if (!useCam || state === 'menu') {
+      if (state === 'menu') { menuT += dt; if (menuT > 1.8) { menuT = 0; PL.forEach((p, i) => { p.preset = (p.preset + 1 + i * 3) % POSES.length; }); } }
+      if (state !== 'over') PL.forEach((p, i) => updateBodyFromPreset(i, dt));
+    }
+    if (state === 'play') updateWalls(dt);
+    else if (state === 'dying') { updateWalls(dt); dieT -= dt; if (dieT <= 0) gameOver(); }
+    if (state === 'play' && useCam && PL.some(p => !p.B.valid && elapsed - p.B.seen > 0.8) && !window.__warned) { window.__warned = true; toast(versus ? 'Salah satu pemain tidak terdeteksi — pastikan badan atas kalian terlihat.' : 'Tubuhmu tidak terdeteksi — pastikan badan bagian atas terlihat di kamera.', 2500); setTimeout(() => { window.__warned = false; }, 6000); }
+    render(dt); requestAnimationFrame(frame);
+  }
+
+  resize(); setVersus(false); toMenu();
+  $('bestHud').textContent = 'TERBAIK ' + best;
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
